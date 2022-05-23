@@ -1,0 +1,4 @@
+---
+port: "7001"
+log_path: "reports/logs"
+log_level: "5"

@@ -1,0 +1,6 @@
+---
+log_path: "reports/logs"
+download_path: "reports/docs"
+log_level: "5"
+download_path: "reports/docs2"
+pepito: "pepita"
