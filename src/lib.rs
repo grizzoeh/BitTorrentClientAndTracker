@@ -1,1 +1,1 @@
-pub mod bencoder;
+pub mod bdecoder;
