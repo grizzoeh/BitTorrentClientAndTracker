@@ -9,7 +9,7 @@ pub enum ConfigError {
     ExpectedFieldNotFound,
 }
 
-pub fn parse(filename: String) -> Result<HashMap<String, String>, ConfigError> {
+pub fn config_parse(filename: String) -> Result<HashMap<String, String>, ConfigError> {
     let cfgfile = File::open(&filename);
     let cfgfile = match cfgfile {
         Ok(cfgfile) => cfgfile,
@@ -67,14 +67,14 @@ mod tests {
     #[test]
     fn test_empty_parser() {
         let filename = String::from("src/config_test_files/config_empty.yml");
-        let cfg = parse(filename);
+        let cfg = config_parse(filename);
         assert!(cfg.is_err());
     }
 
     #[test]
     fn test_right_parser() {
         let filename = String::from("src/config_test_files/config.yml");
-        let cfg = parse(filename);
+        let cfg = config_parse(filename);
         let right = HashMap::from([
             ("port".to_string(), "7001".to_string()),
             ("log_path".to_string(), "reports/logs".to_string()),
@@ -87,7 +87,7 @@ mod tests {
     #[test]
     fn test_duplicate_parser() {
         let filename = String::from("src/config_test_files/config_duplicate.yml");
-        let cfg = parse(filename);
+        let cfg = config_parse(filename);
         let right = HashMap::from([
             ("port".to_string(), "8008".to_string()),
             ("log_path".to_string(), "reports/logs".to_string()),
@@ -100,20 +100,20 @@ mod tests {
     #[test]
     fn test_missing_parser() {
         let filename = String::from("src/config_test_files/config_missing.yml");
-        let cfg = parse(filename);
+        let cfg = config_parse(filename);
         assert!(cfg.is_err());
     }
 
     #[test]
     fn test_missing_duplicate_parser() {
         let filename = String::from("src/config_test_files/config_missing_duplicate.yml");
-        let cfg = parse(filename);
+        let cfg = config_parse(filename);
         assert!(cfg.is_err());
     }
     #[test]
     fn test_extra_parser() {
         let filename = String::from("src/config_test_files/config_extra.yml");
-        let cfg = parse(filename);
+        let cfg = config_parse(filename);
         let right = HashMap::from([
             ("port".to_string(), "7001".to_string()),
             ("log_path".to_string(), "reports/logs".to_string()),

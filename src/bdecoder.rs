@@ -1,6 +1,6 @@
 use std::{collections::HashMap, convert::From, io};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Decodification {
     Dic(HashMap<String, Decodification>),
     List(Vec<Decodification>),
@@ -15,7 +15,7 @@ pub enum DecodeError {
     UnexpectedCharacter(String),
 }
 
-pub fn parse(bytes: &[u8]) -> Result<Decodification, DecodeError> {
+pub fn bdecode(bytes: &[u8]) -> Result<Decodification, DecodeError> {
     let (decoded, _) = parse_from(bytes, 0)?;
     Ok(decoded)
 }
@@ -137,28 +137,28 @@ mod tests {
     #[test]
     fn test_decode_positive_int() {
         let bencoded = b"i1e";
-        let decoded = parse(bencoded);
+        let decoded = bdecode(bencoded);
         assert_eq!(decoded.unwrap(), Decodification::Int(1));
     }
 
     #[test]
     fn test_decode_negative_int() {
         let bencoded = b"i-12e";
-        let decoded = parse(bencoded);
+        let decoded = bdecode(bencoded);
         assert_eq!(decoded.unwrap(), Decodification::Int(-12));
     }
 
     #[test]
     fn test_decode_big_int() {
         let bencoded = b"i12123124124124e";
-        let decoded = parse(bencoded);
+        let decoded = bdecode(bencoded);
         assert_eq!(decoded.unwrap(), Decodification::Int(12123124124124));
     }
 
     #[test]
     fn test_decode_string() {
         let bencoded = b"6:espejo";
-        let decoded = parse(bencoded);
+        let decoded = bdecode(bencoded);
         assert_eq!(
             decoded.unwrap(),
             Decodification::String(String::from("espejo"))
@@ -168,7 +168,7 @@ mod tests {
     #[test]
     fn test_decode_string_with_spaces() {
         let bencoded = b"3: aa";
-        let decoded = parse(bencoded);
+        let decoded = bdecode(bencoded);
         assert_eq!(
             decoded.unwrap(),
             Decodification::String(String::from(" aa"))
@@ -178,7 +178,7 @@ mod tests {
     #[test]
     fn test_decode_string_with_spaces_and_colons() {
         let bencoded = b"7: aa: bb";
-        let decoded = parse(bencoded);
+        let decoded = bdecode(bencoded);
         assert_eq!(
             decoded.unwrap(),
             Decodification::String(String::from(" aa: bb"))
@@ -188,14 +188,14 @@ mod tests {
     #[test]
     fn test_decode_empty_string() {
         let bencoded = b"0:";
-        let decoded = parse(bencoded);
+        let decoded = bdecode(bencoded);
         assert_eq!(decoded.unwrap(), Decodification::String(String::from("")));
     }
 
     #[test]
     fn test_decode_list_with_strings() {
         let bencoded = b"l2:si3:sal4:ojos2:aee";
-        let decoded = parse(bencoded);
+        let decoded = bdecode(bencoded);
         assert_eq!(
             decoded.unwrap(),
             Decodification::List(vec![
@@ -210,7 +210,7 @@ mod tests {
     #[test]
     fn test_decode_list_with_ints() {
         let bencoded = b"li1ei22ei31ei-441ei5000ee";
-        let decoded = parse(bencoded);
+        let decoded = bdecode(bencoded);
         assert_eq!(
             decoded.unwrap(),
             Decodification::List(vec![
@@ -226,7 +226,7 @@ mod tests {
     #[test]
     fn test_decode_dic_with_strings() {
         let bencoded = b"d3:key4:hola6:holaaa5:joseae";
-        let decoded = parse(bencoded);
+        let decoded = bdecode(bencoded);
         assert_eq!(
             decoded.unwrap(),
             Decodification::Dic(HashMap::from([
@@ -245,7 +245,7 @@ mod tests {
     #[test]
     fn test_decode_tracker_response() {
         let bencoded = b"d8:intervali456e8:completei23e10:incompletei112e5:peersld4:porti3000e2:ip6:holajoed4:porti3001e2:ip6:chaujoeee";
-        let decoded = parse(bencoded);
+        let decoded = bdecode(bencoded);
         assert_eq!(
             decoded.unwrap(),
             Decodification::Dic(HashMap::from([
