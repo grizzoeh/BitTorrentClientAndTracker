@@ -44,8 +44,8 @@ fn parse_from(bytes: &[u8], i: usize) -> Result<(Decodification, usize), DecodeE
             Ok(decoded)
         }
         _ => Err(DecodeError::UnexpectedCharacter(format!(
-            "unexpected character: {}",
-            bytes[i - 2] as char,
+            "unexpected character: {} at index:{}",
+            bytes[i] as char, i,
         ))),
     }
 }
@@ -273,5 +273,15 @@ mod tests {
                 ),
             ]))
         );
+    }
+
+    #[test]
+    fn type_of_response() {
+        let decoded = bdecode("d8:completei11e10:incompletei0e8:intervali1800e5:peersld2:ip12:91.189.95.217:peer id20:T03I--00LKG63z9lO3234:porti6883eed2:ip14:172.93.166.1247:peer id20:-DE13F0-(xSd_hd~8d_N4:porti57778eeee".as_bytes());
+        if let Decodification::Dic(dic) = decoded.unwrap() {
+            assert_eq!(*dic.get("complete").unwrap(), Decodification::Int(11));
+            assert_eq!(*dic.get("incomplete").unwrap(), Decodification::Int(0));
+            assert_eq!(*dic.get("interval").unwrap(), Decodification::Int(1800));
+        }
     }
 }

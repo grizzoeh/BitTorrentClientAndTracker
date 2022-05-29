@@ -42,9 +42,11 @@ fn encode_deco_list(list: &[Decodification]) -> Vec<u8> {
 
 fn encode_deco_dic(dict: &HashMap<String, Decodification>) -> Vec<u8> {
     let mut vec = vec![b'd'];
-    for (key, value) in dict {
+    let mut keys = dict.keys().collect::<Vec<&String>>();
+    keys.sort();
+    for key in keys {
         vec.extend_from_slice(&encode_byte_string(key));
-        vec.extend_from_slice(&encode_decodification(value));
+        vec.extend_from_slice(&encode_decodification(&dict[key]));
     }
     vec.push(b'e');
     vec
@@ -94,6 +96,7 @@ fn encode_byte_string(slice: &str) -> Vec<u8> {
 mod tests {
     use super::*;
     use crate::bdecoder::bdecode;
+    use sha1::{Digest, Sha1};
 
     #[test]
     fn string_lower_case() {
@@ -261,13 +264,28 @@ mod tests {
         let encoded = bencode(&decoded_aux);
         assert_eq!(right, encoded.as_slice());
     }
+
     #[test]
-    fn encode_deco_tracker_response_test() {
-        let right = b"d8:intervali456e4:holai1ee";
+    fn encode_deco_dicd_test() {
+        let right = b"d8:intervali456e3:olai1ee";
         let decoded = bdecode(right).unwrap();
         let decoded_aux = BencoderTypes::Decodification(decoded);
-        let mut encoded = bencode(&decoded_aux);
-        let mut vec = right.iter().collect::<Vec<_>>();
-        assert_eq!(vec.sort(), encoded.sort());
+        let encoded = bencode(&decoded_aux);
+        assert_eq!(right, encoded.as_slice());
+    }
+    #[test]
+    fn encode_deco_tracker_response_test() {
+        let right = b"d8:completei4e10:incompletei0e8:intervali1800e5:peersld2:ip12:91.189.95.217:peer id20:T03I--00L0fMrxsYDws64:porti6892eeee";
+        let decoded = bdecode(right).unwrap();
+        let decoded_aux = BencoderTypes::Decodification(decoded);
+        let encoded = bencode(&decoded_aux);
+        assert_eq!(right, encoded.as_slice());
+        let mut hasher = Sha1::new();
+        hasher.update(encoded);
+        let hash = hasher.finalize()[..].to_vec();
+        let mut hasher = Sha1::new();
+        hasher.update(right.clone());
+        let right = hasher.finalize()[..].to_vec();
+        assert_eq!(hash, right)
     }
 }
