@@ -15,12 +15,7 @@ pub fn config_parse(filename: String) -> Result<HashMap<String, String>, ConfigE
         Ok(cfgfile) => cfgfile,
         Err(_) => return Err(ConfigError::FileNotFound),
     };
-    let mut cfg = HashMap::from([
-        ("port".to_string(), "".to_string()),
-        ("log_path".to_string(), "".to_string()),
-        ("download_path".to_string(), "".to_string()),
-        ("log_level".to_string(), "1".to_string()),
-    ]);
+    let mut cfg = HashMap::new();
 
     let cfgfile = BufReader::new(cfgfile);
     for line in cfgfile.lines() {
@@ -46,10 +41,11 @@ pub fn config_parse(filename: String) -> Result<HashMap<String, String>, ConfigE
             None => "",
         };
 
-        if !cfg.contains_key(key) {
-            continue;
-        }
         cfg.insert(key.to_string(), val.to_string());
+    }
+
+    if cfg.keys().len() == 0 {
+        return Err(ConfigError::ExpectedFieldNotFound);
     }
 
     for v in cfg.values() {
@@ -73,51 +69,19 @@ mod tests {
 
     #[test]
     fn test_right_parser() {
-        let filename = String::from("src/config_test_files/config.yml");
+        let filename = String::from("src/config.yml");
         let cfg = config_parse(filename);
         let right = HashMap::from([
-            ("port".to_string(), "7001".to_string()),
+            ("port".to_string(), "443".to_string()),
             ("log_path".to_string(), "reports/logs".to_string()),
-            ("download_path".to_string(), "reports/docs".to_string()),
-            ("log_level".to_string(), "5".to_string()),
-        ]);
-        assert_eq!(cfg.unwrap(), right);
-    }
-
-    #[test]
-    fn test_duplicate_parser() {
-        let filename = String::from("src/config_test_files/config_duplicate.yml");
-        let cfg = config_parse(filename);
-        let right = HashMap::from([
-            ("port".to_string(), "8008".to_string()),
-            ("log_path".to_string(), "reports/logs".to_string()),
-            ("download_path".to_string(), "reports/docs".to_string()),
-            ("log_level".to_string(), "1".to_string()),
-        ]);
-        assert_eq!(cfg.unwrap(), right);
-    }
-
-    #[test]
-    fn test_missing_parser() {
-        let filename = String::from("src/config_test_files/config_missing.yml");
-        let cfg = config_parse(filename);
-        assert!(cfg.is_err());
-    }
-
-    #[test]
-    fn test_missing_duplicate_parser() {
-        let filename = String::from("src/config_test_files/config_missing_duplicate.yml");
-        let cfg = config_parse(filename);
-        assert!(cfg.is_err());
-    }
-    #[test]
-    fn test_extra_parser() {
-        let filename = String::from("src/config_test_files/config_extra.yml");
-        let cfg = config_parse(filename);
-        let right = HashMap::from([
-            ("port".to_string(), "7001".to_string()),
-            ("log_path".to_string(), "reports/logs".to_string()),
-            ("download_path".to_string(), "reports/docs".to_string()),
+            (
+                "download_path".to_string(),
+                "src/downloads/download.txt".to_string(),
+            ),
+            (
+                "torrent_path".to_string(),
+                "src/torrent_test_files/ubuntu-22.04-desktop-amd64.iso.torrent".to_string(),
+            ),
             ("log_level".to_string(), "5".to_string()),
         ]);
         assert_eq!(cfg.unwrap(), right);

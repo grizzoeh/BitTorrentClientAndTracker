@@ -2,10 +2,20 @@ use std::{collections::HashMap, convert::From, io};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Decodification {
-    Dic(HashMap<String, Decodification>),
+    Dic(HashMap<Vec<u8>, Decodification>),
     List(Vec<Decodification>),
     Int(i64),
-    String(String),
+    String(Vec<u8>),
+}
+
+pub fn from_vec_to_string(vec: &[u8]) -> String {
+    vec.iter().fold(String::new(), |acc, byte| {
+        format!("{}{}", acc, *byte as char)
+    })
+}
+
+pub fn from_string_to_vec(str: &str) -> Vec<u8> {
+    str.as_bytes().to_vec()
 }
 
 #[derive(Debug)]
@@ -22,7 +32,7 @@ pub fn bdecode(bytes: &[u8]) -> Result<Decodification, DecodeError> {
 
 fn parse_from(bytes: &[u8], i: usize) -> Result<(Decodification, usize), DecodeError> {
     if bytes[i].is_ascii_digit() {
-        // string case
+        // String case
         let decoded = decode_str(bytes, i)?;
         return Ok(decoded);
     }
@@ -79,7 +89,7 @@ fn decode_int(bytes: &[u8], i: usize) -> Result<(Decodification, usize), DecodeE
 }
 
 fn decode_str(bytes: &[u8], i: usize) -> Result<(Decodification, usize), DecodeError> {
-    let mut decoded = String::new();
+    let mut decoded = vec![];
     let mut j = i;
     let mut len = 0;
 
@@ -95,18 +105,18 @@ fn decode_str(bytes: &[u8], i: usize) -> Result<(Decodification, usize), DecodeE
     j += 1;
 
     for _ in 0..len {
-        decoded.push(bytes[j] as char);
+        decoded.push(bytes[j]);
         j += 1;
     }
     Ok((Decodification::String(decoded), j))
 }
 
 fn decode_dic(bencoded_dic: &[u8], i: usize) -> Result<(Decodification, usize), DecodeError> {
-    let mut decoded: HashMap<String, Decodification> = HashMap::new();
+    let mut decoded: HashMap<Vec<u8>, Decodification> = HashMap::new();
     let mut j = i + 1;
 
     while bencoded_dic[j] != b'e' {
-        let (key, key_index) = parse_from(bencoded_dic, j)?; // We are not checking if key is string
+        let (key, key_index) = decode_str(bencoded_dic, j)?;
         let (value, value_index) = parse_from(bencoded_dic, key_index)?;
 
         if let Decodification::String(str_aux) = key {
@@ -161,17 +171,16 @@ mod tests {
         let decoded = bdecode(bencoded);
         assert_eq!(
             decoded.unwrap(),
-            Decodification::String(String::from("espejo"))
+            Decodification::String("espejo".as_bytes().to_vec())
         );
     }
-
     #[test]
     fn test_decode_string_with_spaces() {
         let bencoded = b"3: aa";
         let decoded = bdecode(bencoded);
         assert_eq!(
             decoded.unwrap(),
-            Decodification::String(String::from(" aa"))
+            Decodification::String(String::from(" aa").as_bytes().to_vec())
         );
     }
 
@@ -181,7 +190,7 @@ mod tests {
         let decoded = bdecode(bencoded);
         assert_eq!(
             decoded.unwrap(),
-            Decodification::String(String::from(" aa: bb"))
+            Decodification::String(String::from(" aa: bb").as_bytes().to_vec())
         );
     }
 
@@ -189,7 +198,10 @@ mod tests {
     fn test_decode_empty_string() {
         let bencoded = b"0:";
         let decoded = bdecode(bencoded);
-        assert_eq!(decoded.unwrap(), Decodification::String(String::from("")));
+        assert_eq!(
+            decoded.unwrap(),
+            Decodification::String(String::from("").as_bytes().to_vec())
+        );
     }
 
     #[test]
@@ -199,10 +211,10 @@ mod tests {
         assert_eq!(
             decoded.unwrap(),
             Decodification::List(vec![
-                Decodification::String(String::from("si")),
-                Decodification::String(String::from("sal")),
-                Decodification::String(String::from("ojos")),
-                Decodification::String(String::from("ae")),
+                Decodification::String(String::from("si").as_bytes().to_vec()),
+                Decodification::String(String::from("sal").as_bytes().to_vec()),
+                Decodification::String(String::from("ojos").as_bytes().to_vec()),
+                Decodification::String(String::from("ae").as_bytes().to_vec()),
             ])
         );
     }
@@ -231,12 +243,12 @@ mod tests {
             decoded.unwrap(),
             Decodification::Dic(HashMap::from([
                 (
-                    String::from("holaaa"),
-                    Decodification::String(String::from("josea"))
+                    String::from("holaaa").as_bytes().to_vec(),
+                    Decodification::String(String::from("josea").as_bytes().to_vec())
                 ),
                 (
-                    String::from("key"),
-                    Decodification::String(String::from("hola"))
+                    String::from("key").as_bytes().to_vec(),
+                    Decodification::String(String::from("hola").as_bytes().to_vec())
                 ),
             ]))
         );
@@ -249,24 +261,39 @@ mod tests {
         assert_eq!(
             decoded.unwrap(),
             Decodification::Dic(HashMap::from([
-                (String::from("interval"), Decodification::Int(456)),
-                (String::from("complete"), Decodification::Int(23)),
-                (String::from("incomplete"), Decodification::Int(112)),
                 (
-                    String::from("peers"),
+                    String::from("interval").as_bytes().to_vec(),
+                    Decodification::Int(456)
+                ),
+                (
+                    String::from("complete").as_bytes().to_vec(),
+                    Decodification::Int(23)
+                ),
+                (
+                    String::from("incomplete").as_bytes().to_vec(),
+                    Decodification::Int(112)
+                ),
+                (
+                    String::from("peers").as_bytes().to_vec(),
                     Decodification::List(vec![
                         Decodification::Dic(HashMap::from([
-                            (String::from("port"), Decodification::Int(3000)),
                             (
-                                String::from("ip"),
-                                Decodification::String(String::from("holajo"))
+                                String::from("port").as_bytes().to_vec(),
+                                Decodification::Int(3000)
+                            ),
+                            (
+                                String::from("ip").as_bytes().to_vec(),
+                                Decodification::String(String::from("holajo").as_bytes().to_vec())
                             ),
                         ])),
                         Decodification::Dic(HashMap::from([
-                            (String::from("port"), Decodification::Int(3001)),
                             (
-                                String::from("ip"),
-                                Decodification::String(String::from("chaujo"))
+                                String::from("port").as_bytes().to_vec(),
+                                Decodification::Int(3001)
+                            ),
+                            (
+                                String::from("ip").as_bytes().to_vec(),
+                                Decodification::String(String::from("chaujo").as_bytes().to_vec())
                             ),
                         ])),
                     ])
@@ -279,9 +306,18 @@ mod tests {
     fn type_of_response() {
         let decoded = bdecode("d8:completei11e10:incompletei0e8:intervali1800e5:peersld2:ip12:91.189.95.217:peer id20:T03I--00LKG63z9lO3234:porti6883eed2:ip14:172.93.166.1247:peer id20:-DE13F0-(xSd_hd~8d_N4:porti57778eeee".as_bytes());
         if let Decodification::Dic(dic) = decoded.unwrap() {
-            assert_eq!(*dic.get("complete").unwrap(), Decodification::Int(11));
-            assert_eq!(*dic.get("incomplete").unwrap(), Decodification::Int(0));
-            assert_eq!(*dic.get("interval").unwrap(), Decodification::Int(1800));
+            assert_eq!(
+                *dic.get(&"complete".as_bytes().to_vec()).unwrap(),
+                Decodification::Int(11)
+            );
+            assert_eq!(
+                *dic.get(&"incomplete".as_bytes().to_vec()).unwrap(),
+                Decodification::Int(0)
+            );
+            assert_eq!(
+                *dic.get(&"interval".as_bytes().to_vec()).unwrap(),
+                Decodification::Int(1800)
+            );
         }
     }
 }

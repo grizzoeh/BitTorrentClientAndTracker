@@ -2,7 +2,7 @@ use crate::bdecoder::Decodification;
 use std::collections::{BTreeMap, HashMap};
 use std::convert::From;
 use std::string::ToString;
-/// Bencoder only receives 4 types: String, Vec<String>, Int64 & HashMap<String, String>.
+
 pub enum BencoderTypes {
     String(String),
     List(Vec<String>),
@@ -11,7 +11,6 @@ pub enum BencoderTypes {
     Decodification(Decodification),
 }
 
-/// encode must receive something of type BencoderTypes
 pub fn bencode(obj: &BencoderTypes) -> Vec<u8> {
     match obj {
         BencoderTypes::String(obj) => encode_byte_string(obj),
@@ -24,11 +23,20 @@ pub fn bencode(obj: &BencoderTypes) -> Vec<u8> {
 
 fn encode_decodification(obj: &Decodification) -> Vec<u8> {
     match obj {
-        Decodification::String(obj) => encode_byte_string(obj),
+        Decodification::String(obj) => encode_deco_byte_string(obj),
         Decodification::Int(obj) => encode_int(obj),
         Decodification::List(obj) => encode_deco_list(obj),
         Decodification::Dic(obj) => encode_deco_dic(obj),
     }
+}
+
+fn encode_deco_byte_string(obj: &[u8]) -> Vec<u8> {
+    let mut encoded: Vec<u8> = vec![];
+    let mut len = Vec::from(obj.len().to_string().as_bytes());
+    encoded.append(&mut len);
+    encoded.push(b':');
+    encoded.append(&mut obj.to_owned());
+    encoded
 }
 
 fn encode_deco_list(list: &[Decodification]) -> Vec<u8> {
@@ -40,27 +48,25 @@ fn encode_deco_list(list: &[Decodification]) -> Vec<u8> {
     vec
 }
 
-fn encode_deco_dic(dict: &HashMap<String, Decodification>) -> Vec<u8> {
+fn encode_deco_dic(dict: &HashMap<Vec<u8>, Decodification>) -> Vec<u8> {
     let mut vec = vec![b'd'];
-    let mut keys = dict.keys().collect::<Vec<&String>>();
+    let mut keys = dict.keys().cloned().collect::<Vec<Vec<u8>>>();
     keys.sort();
     for key in keys {
-        vec.extend_from_slice(&encode_byte_string(key));
-        vec.extend_from_slice(&encode_decodification(&dict[key]));
+        vec.extend_from_slice(&encode_deco_byte_string(&key));
+        vec.extend_from_slice(&encode_decodification(&dict[&key]));
     }
     vec.push(b'e');
     vec
 }
 
-/// Example: encode it from 123 to "i123e" as [u8].
 fn encode_int(int: &i64) -> Vec<u8> {
     let mut vec = vec![b'i'];
-    vec.extend_from_slice(int.to_string().as_bytes()); // Push int as bytes
+    vec.extend_from_slice(int.to_string().as_bytes());
     vec.push(b'e');
     vec
 }
 
-/// Example: encode it from {"hola": "chau", "mesa": "silla"} to "d4:hola4:chau4:mesa5:sillae" as [u8]
 fn encode_dic(hm: &HashMap<String, String>) -> Vec<u8> {
     let mut vec = vec![b'd'];
     let ordered: BTreeMap<_, _> = hm.iter().collect();
@@ -73,7 +79,6 @@ fn encode_dic(hm: &HashMap<String, String>) -> Vec<u8> {
     vec
 }
 
-/// Example: encode it from ["hola", "chau", "mesa", "silla"] to "l4:hola4:chau4:mesa5:sillae" as [u8]
 fn encode_list(list: &[String]) -> Vec<u8> {
     let mut vec = vec![b'l'];
     for elem in list {
@@ -84,9 +89,8 @@ fn encode_list(list: &[String]) -> Vec<u8> {
     vec
 }
 
-/// Example: encode it from "string" to "6:string" as [u8]
 fn encode_byte_string(slice: &str) -> Vec<u8> {
-    let mut vec = Vec::from(slice.len().to_string().as_bytes()); // Len in base ten ASCII
+    let mut vec = Vec::from(slice.len().to_string().as_bytes());
     vec.push(b':');
     vec.extend_from_slice(slice.as_bytes());
     vec
@@ -257,16 +261,28 @@ mod tests {
 
     // Encode Decodification Tests:
     #[test]
-    fn encode_deco_list_test() {
+    fn encode_deco_byte_string() {
+        let right = "8: AnElAp;".as_bytes().to_vec();
+        let decoded = bdecode("8: AnElAp;".as_bytes()).unwrap();
+        let decoded_aux = BencoderTypes::Decodification(decoded);
+        let encoded = bencode(&decoded_aux);
+        assert_eq!(right, encoded);
+    }
+
+    #[test]
+    fn encode_deco_list() {
         let right = b"l2:si3:sal4:ojos2:aee";
         let decoded = bdecode(right).unwrap();
         let decoded_aux = BencoderTypes::Decodification(decoded);
         let encoded = bencode(&decoded_aux);
-        assert_eq!(right, encoded.as_slice());
+        assert_eq!(
+            String::from_utf8(right.to_vec()),
+            String::from_utf8(encoded)
+        );
     }
 
     #[test]
-    fn encode_deco_dicd_test() {
+    fn encode_deco_dic() {
         let right = b"d8:intervali456e3:olai1ee";
         let decoded = bdecode(right).unwrap();
         let decoded_aux = BencoderTypes::Decodification(decoded);
@@ -274,12 +290,16 @@ mod tests {
         assert_eq!(right, encoded.as_slice());
     }
     #[test]
-    fn encode_deco_tracker_response_test() {
+    fn encode_deco_tracker_response() {
         let right = b"d8:completei4e10:incompletei0e8:intervali1800e5:peersld2:ip12:91.189.95.217:peer id20:T03I--00L0fMrxsYDws64:porti6892eeee";
         let decoded = bdecode(right).unwrap();
         let decoded_aux = BencoderTypes::Decodification(decoded);
         let encoded = bencode(&decoded_aux);
-        assert_eq!(right, encoded.as_slice());
+        assert_eq!(
+            String::from_utf8(encoded.clone()),
+            String::from_utf8(right.to_vec())
+        );
+
         let mut hasher = Sha1::new();
         hasher.update(encoded);
         let hash = hasher.finalize()[..].to_vec();

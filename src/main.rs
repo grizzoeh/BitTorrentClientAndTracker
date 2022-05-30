@@ -17,10 +17,20 @@ mod bencoder;
 pub use crate::torrentparser::torrent_parse;
 mod torrentparser;
 
-fn main() {
-    let torrent_path: String =
-        String::from("src/torrent_test_files/ubuntu-22.04-desktop-amd64.iso.torrent");
-    let download_path: String = String::from("src/downloads/download.txt");
+pub use crate::parser::config_parse;
+mod parser;
 
-    let _: Client = Client::new(torrent_path, download_path).unwrap();
+pub use crate::client::ClientError;
+
+const CONFIG_PATH: &str = "src/config.yml";
+
+fn main() -> Result<(), ClientError> {
+    let config = match config_parse(CONFIG_PATH.to_string()) {
+        Ok(config) => config,
+        Err(_) => return Err(ClientError::ParserError),
+    };
+
+    let client: Client = Client::new(config).unwrap();
+    client.start();
+    Ok(())
 }

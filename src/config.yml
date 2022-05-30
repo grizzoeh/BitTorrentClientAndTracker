@@ -1,0 +1,6 @@
+---
+port: "443"
+log_path: "reports/logs"
+download_path: "src/downloads/download.txt"
+torrent_path: "src/torrent_test_files/ubuntu-22.04-desktop-amd64.iso.torrent"
+log_level: "5"

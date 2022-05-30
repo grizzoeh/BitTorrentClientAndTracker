@@ -1,3 +1,0 @@
-puerto TCP en el que se reciben conexiones de otros peers:
-ruta al directorio de logs:
-ruta al directorio de descargas de archivos:

@@ -1,9 +1,8 @@
-use crate::bdecoder::{bdecode, Decodification};
+use crate::bdecoder::{bdecode, from_string_to_vec, from_vec_to_string, Decodification};
 use crate::bencoder::{bencode, BencoderTypes};
 use sha1::{Digest, Sha1};
 use std::fs::File;
 use std::io::{prelude::*, BufReader};
-//use hex::{encode};
 
 #[derive(Debug)]
 pub enum TorrentError {
@@ -25,7 +24,11 @@ pub fn torrent_parse(filename: &str) -> Result<(String, Vec<u8>), TorrentError> 
     let mut data = (String::new(), Vec::new()); // atado con alambre
     let mut torrentfile = BufReader::new(torrentfile);
     let mut torrent_vec = Vec::new();
-    torrentfile.read_to_end(&mut torrent_vec).unwrap();
+
+    let _i = match torrentfile.read_to_end(&mut torrent_vec) {
+        Ok(i) => i,
+        Err(_) => return Err(TorrentError::FileNotReadable),
+    };
 
     let torrent = &torrent_vec;
     let decoded = bdecode(torrent);
@@ -35,16 +38,15 @@ pub fn torrent_parse(filename: &str) -> Result<(String, Vec<u8>), TorrentError> 
             return Err(TorrentError::DecodeError);
         }
     };
-
     if let Decodification::Dic(hashmap_aux) = decoded {
-        if let Decodification::String(str_aux) = &hashmap_aux["announce"] {
-            //println!("ANNOUNCE_URL : {}", str_aux);
-            // add announce_url to data
-            data.0 = str_aux.clone();
+        if let Decodification::String(str_aux) = &hashmap_aux[&from_string_to_vec("announce")] {
+            data.0 = from_vec_to_string(str_aux);
         }
-        if let Decodification::Dic(_) = &hashmap_aux["info"] {
-            let encoded = bencode(&BencoderTypes::Decodification(hashmap_aux["info"].clone()));
-            //le aplico SHA1 al valor de "info"
+
+        if let Decodification::Dic(_) = &hashmap_aux[&from_string_to_vec("info")] {
+            let encoded = bencode(&BencoderTypes::Decodification(
+                hashmap_aux[&from_string_to_vec("info")].clone(),
+            ));
             let mut hasher = Sha1::new();
             hasher.update(encoded);
             let hash = hasher.finalize()[..].to_vec();
@@ -70,6 +72,13 @@ mod tests {
             decoded.unwrap().0,
             "http://torrent.ubuntu.com:6969/announce"
         );
+    }
+
+    #[test]
+    fn test_vector_to_string() {
+        let vec = vec![b'a', b'b', b'c'];
+        let str = from_vec_to_string(&vec);
+        assert_eq!(str, "abc");
     }
     /*
     #[test]
