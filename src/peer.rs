@@ -42,7 +42,7 @@ impl Peer {
         data.extend(vec![0u8; 8]);
         data.extend(&info_hash);
         data.extend(peer_id.as_bytes());
-        println!("DATA: {:?}", data);
+        println!("HANDSHAKE SENT: {:?}", data);
         let _i = match stream.write_all(&data) {
             Ok(i) => i,
             Err(_) => return,
