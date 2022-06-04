@@ -1,6 +1,8 @@
-use crate::bdecoder::{bdecode, from_string_to_vec, from_vec_to_string, Decodification};
+use crate::bdecoder::{bdecode, from_string_to_vec, Decodification};
 use crate::bencoder::{bencode, BencoderTypes};
+use crate::utils::i64_to_vecu8;
 use sha1::{Digest, Sha1};
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{prelude::*, BufReader};
 
@@ -14,14 +16,13 @@ pub enum TorrentError {
     ExpectedInfoHashmapNotFound,
 }
 
-pub fn torrent_parse(filename: &str) -> Result<(String, Vec<u8>), TorrentError> {
+pub fn torrent_parse(filename: &str) -> Result<HashMap<String, Vec<u8>>, TorrentError> {
     let torrentfile = File::open(&filename);
     let torrentfile = match torrentfile {
         Ok(torrentfile) => torrentfile,
         Err(_) => return Err(TorrentError::FileNotFound),
     };
 
-    let mut data = (String::new(), Vec::new()); // atado con alambre
     let mut torrentfile = BufReader::new(torrentfile);
     let mut torrent_vec = Vec::new();
 
@@ -38,19 +39,40 @@ pub fn torrent_parse(filename: &str) -> Result<(String, Vec<u8>), TorrentError> 
             return Err(TorrentError::DecodeError);
         }
     };
+
+    get_torrent_info(&decoded)
+}
+
+fn get_torrent_info(decoded: &Decodification) -> Result<HashMap<String, Vec<u8>>, TorrentError> {
+    let mut data: HashMap<String, Vec<u8>> = HashMap::new();
     if let Decodification::Dic(hashmap_aux) = decoded {
         if let Decodification::String(str_aux) = &hashmap_aux[&from_string_to_vec("announce")] {
-            data.0 = from_vec_to_string(str_aux);
+            data.insert("url".to_string(), str_aux.clone());
         }
 
-        if let Decodification::Dic(_) = &hashmap_aux[&from_string_to_vec("info")] {
+        if let Decodification::Dic(info_hashmap) = &hashmap_aux[&from_string_to_vec("info")] {
             let encoded = bencode(&BencoderTypes::Decodification(
                 hashmap_aux[&from_string_to_vec("info")].clone(),
             ));
             let mut hasher = Sha1::new();
             hasher.update(encoded);
             let hash = hasher.finalize()[..].to_vec();
-            data.1 = hash;
+            data.insert("info_hash".to_string(), hash);
+
+            if let Decodification::Int(piece_length) =
+                &info_hashmap[&from_string_to_vec("piece length")]
+            {
+                data.insert(
+                    "piece length".to_string(),
+                    i64_to_vecu8(piece_length).to_vec(),
+                );
+            }
+            if let Decodification::String(str_aux2) = &info_hashmap[&from_string_to_vec("pieces")] {
+                data.insert("pieces".to_string(), str_aux2.clone());
+            }
+            if let Decodification::Int(lenght) = &info_hashmap[&from_string_to_vec("length")] {
+                data.insert("length".to_string(), i64_to_vecu8(lenght).to_vec());
+            }
         } else {
             return Err(TorrentError::ExpectedInfoHashmapNotFound);
         }
@@ -61,7 +83,7 @@ pub fn torrent_parse(filename: &str) -> Result<(String, Vec<u8>), TorrentError> 
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    use crate::bdecoder::from_vec_to_string;
     #[test]
     fn test_announce_ubuntu_torrent() {
         let filename =
@@ -69,7 +91,7 @@ mod tests {
         let decoded = torrent_parse(&filename);
 
         assert_eq!(
-            decoded.unwrap().0,
+            String::from_utf8(decoded.unwrap()["url"].clone()).unwrap(),
             "http://torrent.ubuntu.com:6969/announce"
         );
     }
@@ -82,33 +104,9 @@ mod tests {
     }
     /*
     #[test]
-    fn test_info_ubuntu_torrent() {
-        let torrentfile = File::open(String::from(
-            "src/torrent_test_files/ubuntu-14.04.6-server-ppc64el.iso.torrent",
-        ));
-        let torrentfile = match torrentfile {
-            Ok(torrentfile) => torrentfile,
-            Err(_) => panic!("File not found"),
-        };
-        let mut torrentfile = BufReader::new(torrentfile);
-        let mut torrent_vec = Vec::new();
-        torrentfile.read_to_end(&mut torrent_vec).unwrap();
-        let torrent = &torrent_vec;
-        let decoded = bdecode(torrent);
-        let decoded = match decoded {
-            Ok(decoded) => decoded,
-            Err(_) => panic!("File not found"),
-        };
-        if let Decodification::Dic(hashmap_aux) = decoded {
-            if let Decodification::Dic(_) = &hashmap_aux["info"] {
-                let encoded = bencode(&BencoderTypes::Decodification(hashmap_aux["info"].clone()));
-                //le aplico SHA1 al valor de "info"
-                let mut hasher = Sha1::new();
-                hasher.update(encoded);
-                //let hash = hasher.finalize()[..];
-                assert_eq!(hasher.finalize()[..], hex!("11"))
-            }
-        }
+    fn test_get_torrent_info() {
+        let input = b"d8:announce39:http://torrent.ubuntu.com:6969/announce12:piece lengthi4096eee";
+
     }
     */
 }

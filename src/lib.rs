@@ -6,3 +6,4 @@ pub mod parser;
 pub mod peer;
 pub mod torrentparser;
 pub mod tracker;
+pub mod utils;
