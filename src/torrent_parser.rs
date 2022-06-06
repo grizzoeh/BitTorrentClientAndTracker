@@ -102,11 +102,4 @@ mod tests {
         let str = from_vec_to_string(&vec);
         assert_eq!(str, "abc");
     }
-    /*
-    #[test]
-    fn test_get_torrent_info() {
-        let input = b"d8:announce39:http://torrent.ubuntu.com:6969/announce12:piece lengthi4096eee";
-
-    }
-    */
 }

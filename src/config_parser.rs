@@ -96,10 +96,6 @@ mod tests {
             ("port".to_string(), "443".to_string()),
             ("log_path".to_string(), "reports/logs".to_string()),
             ("download_path".to_string(), "src/downloads/".to_string()),
-            (
-                "torrent_path".to_string(),
-                "src/torrent_test_files/ubuntu-22.04-desktop-amd64.iso.torrent".to_string(),
-            ),
             ("log_level".to_string(), "5".to_string()),
         ]);
         assert_eq!(cfg.unwrap(), right);

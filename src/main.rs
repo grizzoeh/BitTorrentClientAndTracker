@@ -1,7 +1,7 @@
 extern crate native_tls;
 use crabrave::args::get_torrents_paths;
 use crabrave::client::Client;
-use crabrave::parser::config_parse;
+use crabrave::config_parser::config_parse;
 use std::env;
 
 const CONFIG_PATH: &str = "src/config.yml";
