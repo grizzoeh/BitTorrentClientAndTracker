@@ -5,6 +5,8 @@ pub mod client;
 pub mod config_parser;
 pub mod peer;
 pub mod peer_connection;
+pub mod threadpool;
+pub mod threadpool_error;
 pub mod torrent_parser;
 pub mod tracker;
 pub mod utils;
