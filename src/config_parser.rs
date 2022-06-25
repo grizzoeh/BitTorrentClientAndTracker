@@ -1,31 +1,19 @@
+use crate::errors::config_parser_error::ConfigParserError;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{prelude::*, BufReader, Error};
 
-#[derive(Debug)]
-pub enum ConfigError {
-    FileNotFound,
-    FileNotReadable,
-    ExpectedFieldNotFound,
-}
-
-pub fn config_parse(filename: String) -> Result<HashMap<String, String>, ConfigError> {
+pub fn config_parse(filename: String) -> Result<HashMap<String, String>, ConfigParserError> {
     let cfgfile = File::open(&filename);
-    let cfgfile = match cfgfile {
-        Ok(cfgfile) => cfgfile,
-        Err(_) => return Err(ConfigError::FileNotFound),
-    };
+    let cfgfile = cfgfile?;
     let cfgfile = BufReader::new(cfgfile);
     let mut cfg = HashMap::new();
     for line in cfgfile.lines() {
-        cfg = match process_line(line, &mut cfg) {
-            Ok(cfg) => cfg,
-            Err(_) => return Err(ConfigError::FileNotReadable),
-        };
+        cfg = process_line(line, &mut cfg)?;
     }
 
     if cfg.keys().len() == 0 {
-        return Err(ConfigError::ExpectedFieldNotFound);
+        return Err(ConfigParserError::new());
     }
 
     Ok(cfg)
@@ -34,13 +22,8 @@ pub fn config_parse(filename: String) -> Result<HashMap<String, String>, ConfigE
 fn process_line(
     line: Result<String, Error>,
     cfg: &mut HashMap<String, String>,
-) -> Result<HashMap<String, String>, ConfigError> {
-    let line = match line {
-        Ok(line) => line.replace(' ', "").replace('"', ""),
-        Err(_) => {
-            return Err(ConfigError::FileNotReadable);
-        }
-    };
+) -> Result<HashMap<String, String>, ConfigParserError> {
+    let line = line?.replace(' ', "").replace('"', "");
     let index = line.find(':').unwrap_or(0);
 
     if index == 0 {
@@ -48,15 +31,12 @@ fn process_line(
     }
 
     let key = line.get(0..index);
-    let key: &str = match key {
-        Some(key) => key,
-        None => "",
-    };
+    let key = key.unwrap_or("");
 
     let val = line.get(index + 1..);
-    let val: &str = match val {
+    let val = match val {
         Some(val) => val,
-        None => return Err(ConfigError::ExpectedFieldNotFound),
+        None => return Err(ConfigParserError::new()),
     };
 
     cfg.insert(key.to_string(), val.to_string());

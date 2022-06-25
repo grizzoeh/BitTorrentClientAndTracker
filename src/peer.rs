@@ -5,23 +5,10 @@ pub struct Peer {
     pub id: String,
     pub ip: String,
     pub port: u16,
-    // pub is_connected: bool,
     pub bitfield: Vec<u8>,
     pub choked_me: bool,
-    // pub interested_in_me: bool,
+    pub interested_in_me: bool,
     pub is_choked: bool,
-}
-
-#[derive(Debug)]
-pub enum PeerError {
-    ConnectionError(String),
-    HandshakeWritingError(String),
-    HandshakeReadingError(String),
-    InterestedError(String),
-    PeerDidNotRespond(String),
-    UnchokeError(String),
-    RequestError(String),
-    PeerDidNotUnchokeUs(String),
 }
 
 impl Peer {
@@ -31,7 +18,7 @@ impl Peer {
             ip,
             port,
             is_choked: true,
-            //interested_in_me: false,
+            interested_in_me: false,
             choked_me: true,
             bitfield: vec![],
         }
@@ -41,7 +28,15 @@ impl Peer {
     pub fn has_piece(&self, index: u32) -> bool {
         let byte_index = index / U8_BYTE_SIZE;
         let offset = index % U8_BYTE_SIZE;
+
         self.bitfield[byte_index as usize] >> (U8_BYTE_SIZE - 1 - offset) & 1 != 0
+    }
+
+    pub fn add_piece(&mut self, index: u32) {
+        let byte_index = index / U8_BYTE_SIZE;
+        let offset = index % U8_BYTE_SIZE;
+
+        self.bitfield[byte_index as usize] |= 1 << (U8_BYTE_SIZE - 1 - offset);
     }
 }
 

@@ -1,4 +1,5 @@
 use crate::bdecoder::{bdecode, from_string_to_vec, from_vec_to_string, Decodification};
+use crate::errors::tracker_error::TrackerError;
 use crate::peer::Peer;
 use crate::utils::to_urlencoded;
 use native_tls::{TlsConnector, TlsStream};
@@ -16,29 +17,10 @@ pub struct Tracker {
     pub info_hash: Vec<u8>,
 }
 
-#[derive(Debug, PartialEq)]
-pub enum TrackerError {
-    ConnectionError(String),
-    ResponseDecodeError(String),
-    ExpectedDicNotFound(String),
-    FileNotReadable(String),
-    FileNotWritable(String),
-    IncompletePeer(String),
-    InvalidPeerIndex(String),
-}
-
 impl Tracker {
     pub fn new(info: HashMap<String, String>, info_hash: Vec<u8>) -> Result<Tracker, TrackerError> {
         println!("CONNECTING WITH THE TRACKER");
-        let response = match request_tracker(info, &info_hash) {
-            Ok(response) => response,
-            Err(err) => {
-                return Err(TrackerError::ConnectionError(format!(
-                    "Tracker Request Error. With Error: {:?}",
-                    err
-                )))
-            }
-        };
+        let response = request_tracker(info, &info_hash)?;
         println!("RESPONSE OBTAINED SUCCESSFULLY");
 
         if let Decodification::Dic(dic_aux) = response {
@@ -51,41 +33,38 @@ impl Tracker {
             };
             Ok(tracker)
         } else {
-            Err(TrackerError::ExpectedDicNotFound(
-                "Expected Dic not found".to_string(),
-            ))
+            Err(TrackerError::new("Expected Dic not found".to_string()))
         }
     }
 
-    pub fn initialize_peer(&self, index: usize) -> Result<Peer, TrackerError> {
+    pub fn get_peers(&self) -> Result<Vec<Peer>, TrackerError> {
         if let Decodification::List(peer_list) = &self.peers {
-            if index >= peer_list.len() {
-                return Err(TrackerError::InvalidPeerIndex(
-                    "Peer index out of range".to_string(),
-                ));
+            let mut peers = Vec::new();
+            for peer in peer_list.iter() {
+                if let Decodification::Dic(peer_dict) = peer {
+                    let peer_ip = match peer_dict.get(&from_string_to_vec("ip")) {
+                        Some(Decodification::String(ip)) => ip,
+                        _ => return Err(TrackerError::new("missing ip".to_string())),
+                    };
+                    let peer_port = match peer_dict.get(&from_string_to_vec("port")) {
+                        Some(Decodification::Int(port)) => *port as u16,
+                        _ => return Err(TrackerError::new("missing port".to_string())),
+                    };
+                    let peer_id = match peer_dict.get(&from_string_to_vec("peer id")) {
+                        Some(Decodification::String(id)) => id,
+                        _ => return Err(TrackerError::new("missing id".to_string())),
+                    };
+                    let peer = Peer::new(
+                        from_vec_to_string(peer_id),
+                        from_vec_to_string(peer_ip),
+                        peer_port,
+                    );
+                    peers.push(peer);
+                }
             }
-            if let Decodification::Dic(peer_dict) = &peer_list[index] {
-                let peer_ip = match peer_dict.get(&from_string_to_vec("ip")) {
-                    Some(Decodification::String(ip)) => ip,
-                    _ => return Err(TrackerError::IncompletePeer("missing ip".to_string())),
-                };
-                let peer_port = match peer_dict.get(&from_string_to_vec("port")) {
-                    Some(Decodification::Int(port)) => *port as u16,
-                    _ => return Err(TrackerError::IncompletePeer("missing port".to_string())),
-                };
-                let peer_id = match peer_dict.get(&from_string_to_vec("peer id")) {
-                    Some(Decodification::String(id)) => id,
-                    _ => return Err(TrackerError::IncompletePeer("missing id".to_string())),
-                };
-                let peer = Peer::new(
-                    from_vec_to_string(peer_id),
-                    from_vec_to_string(peer_ip),
-                    peer_port,
-                );
-                return Ok(peer);
-            }
+            return Ok(peers);
         }
-        Err(TrackerError::IncompletePeer("Unexpected error".to_string()))
+        Err(TrackerError::new("Expected List not found".to_string()))
     }
 }
 
@@ -94,33 +73,17 @@ fn request_tracker(
     info_hash: &[u8],
 ) -> Result<Decodification, TrackerError> {
     // Request tracker info
-    let mut stream = match start_connection(info["URL"].clone(), info["port"].clone()) {
-        Ok(stream) => stream,
-        Err(err) => return Err(err),
-    };
+    let mut stream = start_connection(info["URL"].clone(), info["port"].clone())?;
 
-    let url = info["URL"].split("//").collect::<Vec<&str>>()[1] // Obtengo la URL sin el protocolo
+    let url = info["URL"].split("//").collect::<Vec<&str>>()[1]
         .split('/')
         .collect::<Vec<&str>>()[0];
 
     let request = format_request(info.clone(), info_hash, url);
-
-    let response = match write_and_read_stream(&mut stream, request) {
-        Ok(response) => response,
-        Err(err) => return Err(err),
-    };
-
+    let response = write_and_read_stream(&mut stream, request)?;
     let d: &[u8] = response_splitter(response.as_ref());
 
-    let response = match bdecode(d) {
-        Ok(response) => response,
-        Err(err) => {
-            return Err(TrackerError::ResponseDecodeError(format!(
-                "Response Decode Error. With Error: {:?}",
-                err
-            )));
-        }
-    };
+    let response = bdecode(d)?;
 
     Ok(response)
 }
@@ -130,30 +93,17 @@ fn start_connection(
     port: String,
 ) -> Result<TlsStream<TcpStream>, TrackerError> {
     if initial_url.is_empty() {
-        return Err(TrackerError::ConnectionError("URL not found".to_string()));
+        return Err(TrackerError::new("URL not found".to_string()));
     }
 
-    let connector = match TlsConnector::new() {
-        Ok(connector) => connector,
-        Err(_) => {
-            return Err(TrackerError::ConnectionError(
-                "TlsConnector Error".to_string(),
-            ))
-        }
-    };
-    let url = initial_url.split("//").collect::<Vec<&str>>()[1] // Obtengo la URL sin el protocolo
+    let connector = TlsConnector::new()?;
+    let url = initial_url.split("//").collect::<Vec<&str>>()[1]
         .split('/')
-        .collect::<Vec<&str>>()[0]; // Le saco el /announce
+        .collect::<Vec<&str>>()[0];
     let url_with_port = format!("{}:{}", url, port);
 
-    let stream = match TcpStream::connect(url_with_port) {
-        Ok(stream) => stream,
-        Err(_) => return Err(TrackerError::ConnectionError("TcpStream Error".to_string())),
-    };
-    let stream = match connector.connect(url, stream) {
-        Ok(stream) => stream,
-        Err(_) => return Err(TrackerError::ConnectionError("TlsStream Error".to_string())),
-    };
+    let stream = TcpStream::connect(url_with_port)?;
+    let stream = connector.connect(url, stream)?;
 
     Ok(stream)
 }
@@ -176,24 +126,10 @@ fn write_and_read_stream(
     stream: &mut TlsStream<TcpStream>,
     request: String,
 ) -> Result<Vec<u8>, TrackerError> {
-    let _i = match stream.write_all(request.as_bytes()) {
-        Ok(i) => i,
-        Err(_) => {
-            return Err(TrackerError::FileNotWritable(
-                "Stream Write Error".to_string(),
-            ))
-        }
-    };
+    stream.write_all(request.as_bytes())?;
     let mut response = vec![];
 
-    let _i = match stream.read_to_end(&mut response) {
-        Ok(i) => i,
-        Err(_) => {
-            return Err(TrackerError::FileNotReadable(
-                "Stream Read Error".to_string(),
-            ))
-        }
-    };
+    stream.read_to_end(&mut response)?;
     Ok(response)
 }
 

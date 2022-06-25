@@ -1,49 +1,29 @@
 use crate::bdecoder::{bdecode, from_string_to_vec, Decodification};
 use crate::bencoder::{bencode, BencoderTypes};
+use crate::errors::torrent_parser_error::TorrentParserError;
 use crate::utils::i64_to_vecu8;
 use sha1::{Digest, Sha1};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{prelude::*, BufReader};
 
-#[derive(Debug)]
-pub enum TorrentError {
-    FileNotFound,
-    FileNotReadable,
-    ExpectedFieldNotFound,
-    DecodeError,
-    HashError,
-    ExpectedInfoHashmapNotFound,
-}
-
-pub fn torrent_parse(filename: &str) -> Result<HashMap<String, Vec<u8>>, TorrentError> {
+pub fn torrent_parse(filename: &str) -> Result<HashMap<String, Vec<u8>>, TorrentParserError> {
     let torrentfile = File::open(&filename);
-    let torrentfile = match torrentfile {
-        Ok(torrentfile) => torrentfile,
-        Err(_) => return Err(TorrentError::FileNotFound),
-    };
+    let torrentfile = torrentfile?;
 
     let mut torrentfile = BufReader::new(torrentfile);
     let mut torrent_vec = Vec::new();
 
-    let _i = match torrentfile.read_to_end(&mut torrent_vec) {
-        Ok(i) => i,
-        Err(_) => return Err(TorrentError::FileNotReadable),
-    };
-
+    torrentfile.read_to_end(&mut torrent_vec)?;
     let torrent = &torrent_vec;
-    let decoded = bdecode(torrent);
-    let decoded = match decoded {
-        Ok(decoded) => decoded,
-        Err(_) => {
-            return Err(TorrentError::DecodeError);
-        }
-    };
+    let decoded = bdecode(torrent)?;
 
     get_torrent_info(&decoded)
 }
 
-fn get_torrent_info(decoded: &Decodification) -> Result<HashMap<String, Vec<u8>>, TorrentError> {
+fn get_torrent_info(
+    decoded: &Decodification,
+) -> Result<HashMap<String, Vec<u8>>, TorrentParserError> {
     let mut data: HashMap<String, Vec<u8>> = HashMap::new();
     if let Decodification::Dic(hashmap_aux) = decoded {
         if let Decodification::String(str_aux) = &hashmap_aux[&from_string_to_vec("announce")] {
@@ -74,7 +54,9 @@ fn get_torrent_info(decoded: &Decodification) -> Result<HashMap<String, Vec<u8>>
                 data.insert("length".to_string(), i64_to_vecu8(lenght).to_vec());
             }
         } else {
-            return Err(TorrentError::ExpectedInfoHashmapNotFound);
+            return Err(TorrentParserError::new(
+                "Info hash_map is not of type Decodification".to_string(),
+            ));
         }
     }
     Ok(data)

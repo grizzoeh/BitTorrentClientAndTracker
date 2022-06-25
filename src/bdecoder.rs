@@ -1,4 +1,5 @@
-use std::{collections::HashMap, convert::From, io};
+use crate::errors::bdecoder_error::BDecoderError;
+use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Decodification {
@@ -18,19 +19,12 @@ pub fn from_string_to_vec(str: &str) -> Vec<u8> {
     str.as_bytes().to_vec()
 }
 
-#[derive(Debug)]
-pub enum DecodeError {
-    IOError(io::Error),
-    UnexpectedEndOfBuffer,
-    UnexpectedCharacter(String),
-}
-
-pub fn bdecode(bytes: &[u8]) -> Result<Decodification, DecodeError> {
+pub fn bdecode(bytes: &[u8]) -> Result<Decodification, BDecoderError> {
     let (decoded, _) = parse_from(bytes, 0)?;
     Ok(decoded)
 }
 
-fn parse_from(bytes: &[u8], i: usize) -> Result<(Decodification, usize), DecodeError> {
+fn parse_from(bytes: &[u8], i: usize) -> Result<(Decodification, usize), BDecoderError> {
     if bytes[i].is_ascii_digit() {
         // String case
         let decoded = decode_str(bytes, i)?;
@@ -53,14 +47,14 @@ fn parse_from(bytes: &[u8], i: usize) -> Result<(Decodification, usize), DecodeE
             let decoded = decode_list(bytes, i)?;
             Ok(decoded)
         }
-        _ => Err(DecodeError::UnexpectedCharacter(format!(
+        _ => Err(BDecoderError::new(format!(
             "unexpected character: {} at index:{}",
             bytes[i] as char, i,
         ))),
     }
 }
 
-fn decode_int(bytes: &[u8], i: usize) -> Result<(Decodification, usize), DecodeError> {
+fn decode_int(bytes: &[u8], i: usize) -> Result<(Decodification, usize), BDecoderError> {
     let mut j = i + 1;
     let mut num: i64 = 0;
     let mut is_negative = false;
@@ -72,9 +66,7 @@ fn decode_int(bytes: &[u8], i: usize) -> Result<(Decodification, usize), DecodeE
             continue;
         }
         if !bytes[j].is_ascii_digit() && bytes[j] != b'-' {
-            return Err(DecodeError::UnexpectedCharacter(String::from(
-                "Not a digit",
-            )));
+            return Err(BDecoderError::new("Not a digit".to_string()));
         }
         num *= 10;
         num += (bytes[j] - b'0') as i64;
@@ -88,7 +80,7 @@ fn decode_int(bytes: &[u8], i: usize) -> Result<(Decodification, usize), DecodeE
     Ok((decoded, j + 1))
 }
 
-fn decode_str(bytes: &[u8], i: usize) -> Result<(Decodification, usize), DecodeError> {
+fn decode_str(bytes: &[u8], i: usize) -> Result<(Decodification, usize), BDecoderError> {
     let mut decoded = vec![];
     let mut j = i;
     let mut len = 0;
@@ -98,9 +90,9 @@ fn decode_str(bytes: &[u8], i: usize) -> Result<(Decodification, usize), DecodeE
         j += 1;
     }
     if bytes[j] != b':' {
-        return Err(DecodeError::UnexpectedCharacter(String::from(
-            "expected ':' after string length",
-        )));
+        return Err(BDecoderError::new(
+            "expected ':' after string length".to_string(),
+        ));
     }
     j += 1;
 
@@ -111,7 +103,7 @@ fn decode_str(bytes: &[u8], i: usize) -> Result<(Decodification, usize), DecodeE
     Ok((Decodification::String(decoded), j))
 }
 
-fn decode_dic(bencoded_dic: &[u8], i: usize) -> Result<(Decodification, usize), DecodeError> {
+fn decode_dic(bencoded_dic: &[u8], i: usize) -> Result<(Decodification, usize), BDecoderError> {
     let mut decoded: HashMap<Vec<u8>, Decodification> = HashMap::new();
     let mut j = i + 1;
 
@@ -128,7 +120,7 @@ fn decode_dic(bencoded_dic: &[u8], i: usize) -> Result<(Decodification, usize), 
     Ok((Decodification::Dic(decoded), j + 1))
 }
 
-fn decode_list(bencoded_list: &[u8], i: usize) -> Result<(Decodification, usize), DecodeError> {
+fn decode_list(bencoded_list: &[u8], i: usize) -> Result<(Decodification, usize), BDecoderError> {
     let mut decoded: Vec<Decodification> = Vec::new();
     let mut j = i + 1;
 

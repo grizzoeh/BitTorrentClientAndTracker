@@ -1,7 +1,10 @@
 use chrono::offset::Utc;
 use chrono::DateTime;
+use std::cmp::Ordering;
 use std::process;
 use std::time::SystemTime;
+
+const ID_LENGTH: usize = 20;
 
 pub fn u32_to_vecu8(number: &u32) -> [u8; 4] {
     let x1: u8 = ((number >> 24) & 0xff) as u8;
@@ -47,9 +50,13 @@ pub fn create_id() -> String {
     let system_time = SystemTime::now();
     let datetime: DateTime<Utc> = system_time.into();
     let mut id = format!("{}{}54321", process::id(), (datetime.timestamp() as u64));
-    if id.len() != 20 {
-        id.push('0');
+
+    match id.len().cmp(&ID_LENGTH) {
+        Ordering::Greater => id.truncate(ID_LENGTH),
+        Ordering::Less => id.push('0'),
+        Ordering::Equal => {}
     }
+
     id
 }
 

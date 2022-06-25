@@ -1,4 +1,5 @@
-use crate::threadpool_error::ThreadPoolError;
+use crate::errors::threadpool_error::ThreadPoolError;
+
 use std::{
     sync::{
         mpsc::{self, channel, Receiver, Sender},
@@ -50,7 +51,7 @@ struct ThreadManager {
     threads: Vec<ThreadInfo>,
     ready_receiver: Receiver<WorkerId>, // to receive idle worker id
     job_receiver: Receiver<Job>,        // to receive tasks
-    ready_sender: Sender<WorkerId>, // used in case of restarting a worker that has panicked, he will use it to send his id
+    _ready_sender: Sender<WorkerId>, // used in case of restarting a worker that has panicked, he will use it to send his id
 }
 
 // store ThreadManager handler to be able to join it when dropped
@@ -74,7 +75,7 @@ impl ThreadManager {
             threads,
             ready_receiver,
             job_receiver,
-            ready_sender,
+            _ready_sender: ready_sender,
         }
     }
 
@@ -104,16 +105,16 @@ impl ThreadManager {
             if thread
                 .handler
                 .as_ref()
-                .map(|h| h.is_finished())
+                .map(|h| -> bool { h.is_finished() })
                 .unwrap_or(true)
             {
-                Self::reset_thread(thread, id, self.ready_sender.clone());
+                Self::_reset_thread(thread, id, self._ready_sender.clone());
             }
         }
     }
 
     // revive thread joining it and restarting it. Updates channels
-    fn reset_thread(thread: &mut ThreadInfo, id: WorkerId, ready_sender: Sender<WorkerId>) {
+    fn _reset_thread(thread: &mut ThreadInfo, id: WorkerId, ready_sender: Sender<WorkerId>) {
         if let Some(handle) = thread.handler.take() {
             let _res = handle.join();
         }
