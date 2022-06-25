@@ -1,5 +1,6 @@
 use std::fmt::Display;
 use std::io::Error;
+use std::sync::mpsc::SendError;
 use std::sync::{MutexGuard, PoisonError};
 
 #[derive(Debug)]
@@ -29,6 +30,14 @@ impl From<Error> for PeerConnectionError {
 
 impl<T> From<PoisonError<MutexGuard<'_, T>>> for PeerConnectionError {
     fn from(error: PoisonError<MutexGuard<'_, T>>) -> PeerConnectionError {
+        PeerConnectionError {
+            msg: format!("PeerConnectionError: poisoned thread ({})", error),
+        }
+    }
+}
+
+impl From<SendError<String>> for PeerConnectionError {
+    fn from(error: SendError<String>) -> PeerConnectionError {
         PeerConnectionError {
             msg: format!("PeerConnectionError: poisoned thread ({})", error),
         }

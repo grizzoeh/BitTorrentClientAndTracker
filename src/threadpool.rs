@@ -1,5 +1,4 @@
 use crate::errors::threadpool_error::ThreadPoolError;
-
 use std::{
     sync::{
         mpsc::{self, channel, Receiver, Sender},

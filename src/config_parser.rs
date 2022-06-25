@@ -74,7 +74,7 @@ mod tests {
         let cfg = config_parse(filename);
         let right = HashMap::from([
             ("port".to_string(), "443".to_string()),
-            ("log_path".to_string(), "reports/logs".to_string()),
+            ("log_path".to_string(), "src/reports/logs.txt".to_string()),
             ("download_path".to_string(), "src/downloads/".to_string()),
             ("log_level".to_string(), "5".to_string()),
         ]);

@@ -5,6 +5,7 @@ use crate::peer_connection::PeerConnection;
 use std::fmt::Display;
 use std::io::Error;
 use std::net::TcpStream;
+use std::sync::mpsc::{SendError, Sender};
 use std::sync::{MutexGuard, PoisonError, RwLockReadGuard, RwLockWriteGuard};
 
 #[derive(Debug)]
@@ -94,6 +95,22 @@ impl From<PoisonError<MutexGuard<'_, Vec<PeerConnection<TcpStream>>>>> for Downl
     ) -> DownloadManagerError {
         DownloadManagerError {
             msg: format!("DownloadManagerError: poisoned thread ({})", error),
+        }
+    }
+}
+
+impl From<SendError<String>> for DownloadManagerError {
+    fn from(error: SendError<String>) -> DownloadManagerError {
+        DownloadManagerError {
+            msg: format!("DownloadManagerError: error logging ({})", error),
+        }
+    }
+}
+
+impl From<PoisonError<MutexGuard<'_, Sender<String>>>> for DownloadManagerError {
+    fn from(error: PoisonError<MutexGuard<'_, Sender<String>>>) -> DownloadManagerError {
+        DownloadManagerError {
+            msg: format!("DownloadManagerError: error logging ({})", error),
         }
     }
 }

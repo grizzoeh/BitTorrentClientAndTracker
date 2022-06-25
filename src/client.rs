@@ -1,5 +1,6 @@
 use crate::download_manager::DownloadManager;
 use crate::errors::client_error::ClientError;
+use crate::logger::Logger;
 use crate::peer::Peer;
 use crate::peer_connection::PeerConnection;
 use crate::torrent_parser::torrent_parse;
@@ -8,8 +9,10 @@ use crate::utils::create_id;
 use crate::utils::vecu8_to_u64;
 use std::collections::HashMap;
 use std::net::TcpStream;
+use std::sync::mpsc::{channel, Sender};
 use std::sync::RwLock;
 use std::sync::{Arc, Mutex};
+use std::thread::spawn;
 extern crate chrono;
 
 pub const CHUNK_SIZE: u32 = 16384;
@@ -20,6 +23,7 @@ pub struct Client {
     pub peers: RwLock<Vec<Peer>>,
     pub torrent_path: String,
     pub download_path: Mutex<String>,
+    pub logger_sender: Arc<Mutex<Sender<String>>>,
     pub tracker: Tracker,
     pub uploaded: u64,
     pub downloaded: u64,
@@ -35,7 +39,7 @@ pub struct Client {
 impl Client {
     pub fn new(config: HashMap<String, String>) -> Result<Arc<Client>, ClientError> {
         let id = create_id();
-        //let log_path = config["log_path"].clone();
+        let log_path = config["log_path"].clone();
         let download_path = config["download_path"].clone();
         let torrent_path = config["torrent_path"].clone();
         let port = config["port"].clone().parse::<u16>()?;
@@ -58,7 +62,13 @@ impl Client {
         info.insert(String::from("left"), format!("{}", left));
         info.insert(String::from("event"), event.clone());
 
-        let tracker = Tracker::new(info, torrent_data["info_hash"].clone())?;
+        let (sender, receiver) = channel();
+        // let sender_clone = sender.clone();
+        let mut logger = Logger::new(log_path, receiver)?;
+        spawn(move || logger.start());
+
+        let tracker = Tracker::new(info, torrent_data["info_hash"].clone(), sender.clone())?;
+
         Ok(Arc::new(Client {
             torrent_path,
             download_path: Mutex::new(download_path),
@@ -66,6 +76,7 @@ impl Client {
             uploaded,
             downloaded,
             left,
+            logger_sender: Arc::new(Mutex::new(sender)),
             event,
             port,
             tracker,
@@ -99,6 +110,7 @@ impl Client {
             self.tracker.info_hash.clone(),
             self.id.clone(),
             Arc::new(Mutex::new(stream)),
+            self.logger_sender.clone(),
         )?;
         Ok(peer_connection)
     }
@@ -118,7 +130,7 @@ mod tests {
             ),
             ("log_level".to_string(), "5".to_string()),
             ("download_path".to_string(), "src/downloads/".to_string()),
-            ("log_path".to_string(), "reports/logs".to_string()),
+            ("log_path".to_string(), "src/reports/logs".to_string()),
         ]);
         assert!(Client::new(config).is_ok());
     }

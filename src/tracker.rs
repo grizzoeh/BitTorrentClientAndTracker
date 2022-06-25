@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::net::TcpStream;
 use std::str;
+use std::sync::mpsc::Sender;
 
 #[derive(Debug, PartialEq)]
 pub struct Tracker {
@@ -18,9 +19,15 @@ pub struct Tracker {
 }
 
 impl Tracker {
-    pub fn new(info: HashMap<String, String>, info_hash: Vec<u8>) -> Result<Tracker, TrackerError> {
+    pub fn new(
+        info: HashMap<String, String>,
+        info_hash: Vec<u8>,
+        sender_logger: Sender<String>,
+    ) -> Result<Tracker, TrackerError> {
         println!("CONNECTING WITH THE TRACKER");
+        sender_logger.send("CONNECTING WITH THE TRACKER".to_string())?; // Preguntar si falla el logger hay que frenar ejecucion
         let response = request_tracker(info, &info_hash)?;
+        sender_logger.send("RESPONSE OBTAINED SUCCESSFULLY".to_string())?;
         println!("RESPONSE OBTAINED SUCCESSFULLY");
 
         if let Decodification::Dic(dic_aux) = response {
@@ -152,6 +159,9 @@ fn response_splitter(response: &[u8]) -> &[u8] {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::logger::Logger;
+    use std::sync::mpsc::channel;
+    use std::thread::spawn;
 
     #[test]
     fn connection_successful() {
@@ -172,7 +182,10 @@ mod tests {
         ]
         .to_vec();
 
-        let tracker = Tracker::new(info, info_hash).unwrap();
+        let (sender, receiver) = channel();
+        let mut logger = Logger::new("src/reports/logs.txt".to_string(), receiver).unwrap();
+        spawn(move || logger.start());
+        let tracker = Tracker::new(info, info_hash, sender).unwrap();
 
         println!("{:?}", tracker);
         let peers = tracker.peers.clone();
@@ -197,7 +210,8 @@ mod tests {
         ]
         .to_vec();
 
-        assert!(Tracker::new(info, info_hash).is_err());
+        let (sender, _) = channel();
+        assert!(Tracker::new(info, info_hash, sender).is_err());
     }
 
     #[test]
@@ -216,7 +230,8 @@ mod tests {
 
         let info_hash = [].to_vec();
 
-        assert!(Tracker::new(info, info_hash).is_err());
+        let (sender, _) = channel();
+        assert!(Tracker::new(info, info_hash, sender).is_err());
     }
 
     #[test]

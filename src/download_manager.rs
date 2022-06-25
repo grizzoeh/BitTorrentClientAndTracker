@@ -55,6 +55,10 @@ impl DownloadManager {
 
     pub fn start_download(self: Arc<Self>) -> Result<(), DownloadManagerError> {
         println!("DOWNLOADING STARTED");
+        self.client
+            .logger_sender
+            .lock()?
+            .send("DOWNLOADING STARTED".to_string())?;
         let threadpool = ThreadPool::new(8);
         for _ in 0..(self.pieces_quantity / 10) {
             let self_copy = self.clone();
@@ -74,6 +78,10 @@ impl DownloadManager {
         let mut piece_indices = Vec::new();
         let mut peer_connection = self.clone().get_peer_connection()?;
         println!("PEER CONNECTION ESTABLISHED");
+        self.client
+            .logger_sender
+            .lock()?
+            .send("PEER CONNECTION ESTABLISHED".to_string())?;
 
         let mut message_type: u8 = ERROR_ID;
         while message_type != UNCHOKE_ID {
@@ -98,6 +106,10 @@ impl DownloadManager {
                     }
                 }
                 println!("PIECES TO DOWNLOAD: {:?}", piece_indices);
+                self.client
+                    .logger_sender
+                    .lock()?
+                    .send(format!("PIECES TO DOWNLOAD: {:?}", piece_indices).to_string())?;
             }
         }
 
@@ -113,6 +125,10 @@ impl DownloadManager {
                 )?;
                 self.bitfield.write()?[piece_idx as usize] = PieceStatus::Downloaded;
                 println!("piece {} downloaded", piece_idx);
+                self.client
+                    .logger_sender
+                    .lock()?
+                    .send(format!("piece {} downloaded", piece_idx).to_string())?;
             } else {
                 self.clean_bitfield(piece_indices)?;
                 return Err(DownloadManagerError::new(
@@ -122,6 +138,10 @@ impl DownloadManager {
         }
         self.idle_peers.lock()?.push(peer_connection);
         println!("Ended Job Successfully");
+        self.client
+            .logger_sender
+            .lock()?
+            .send("Ended Job Successfully".to_string())?;
         Ok(())
     }
 
@@ -154,6 +174,10 @@ impl DownloadManager {
         self: Arc<Self>,
     ) -> Result<PeerConnection<TcpStream>, DownloadManagerError> {
         println!("GETTING PEER CONNECTION");
+        self.client
+            .logger_sender
+            .lock()?
+            .send("GETTING PEER CONNECTION".to_string())?;
         if let Some(peer_connection) = self.idle_peers.lock()?.pop() {
             return Ok(peer_connection);
         } else {

@@ -6,6 +6,7 @@ pub mod client;
 pub mod config_parser;
 pub mod download_manager;
 pub mod errors;
+pub mod logger;
 pub mod peer;
 pub mod peer_connection;
 pub mod threadpool;

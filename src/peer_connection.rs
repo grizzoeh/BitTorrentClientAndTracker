@@ -4,6 +4,7 @@ use crate::peer::Peer;
 use crate::utils::vecu8_to_u32;
 use std::io::prelude::*;
 use std::str;
+use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 
 const PSTR: &str = "BitTorrent protocol";
@@ -39,6 +40,7 @@ const ERROR_ID: u8 = 10;
 pub struct PeerConnection<T: Read + Write> {
     pub peer: Peer,
     pub stream: Arc<Mutex<T>>,
+    pub sender_logger: Arc<Mutex<Sender<String>>>,
 }
 
 impl<T: Read + Write> PeerConnection<T> {
@@ -47,8 +49,13 @@ impl<T: Read + Write> PeerConnection<T> {
         info_hash: Vec<u8>,
         client_id: String,
         stream: Arc<Mutex<T>>,
+        sender_logger: Arc<Mutex<Sender<String>>>,
     ) -> Result<PeerConnection<T>, PeerConnectionError> {
-        let mut connection = PeerConnection { peer, stream };
+        let mut connection = PeerConnection {
+            peer,
+            stream,
+            sender_logger,
+        };
         connection.handshake(info_hash, client_id)?;
         Ok(connection)
     }
@@ -106,7 +113,10 @@ impl<T: Read + Write> PeerConnection<T> {
             }
             CANCEL_ID => {
                 self.read_cancel()?;
-                println!("me cancelo");
+                println!("Cancel message received");
+                self.sender_logger
+                    .lock()?
+                    .send("Cancal message received".to_string())?;
             }
             _ => {
                 return Err(PeerConnectionError::new(format!(
@@ -277,6 +287,10 @@ impl<T: Read + Write> PeerConnection<T> {
             "piece index:{}, offset:{}, length:{}",
             piece_idx, offset, length
         );
+        self.sender_logger.lock()?.send(format!(
+            "piece index:{}, offset:{}, length:{}",
+            piece_idx, offset, length
+        ))?;
 
         //TODO, send pieces requested.
         Ok(())
@@ -313,6 +327,7 @@ impl<T: Read + Write> PeerConnection<T> {
 mod tests {
     use super::*;
     use std::io::{self, Cursor};
+    use std::sync::mpsc::channel;
 
     struct MockTcpStream {
         cursor_r: Cursor<Vec<u8>>,
@@ -360,11 +375,13 @@ mod tests {
             433 as u16,
         );
         let mut stream = MockTcpStream::new(handshake.clone());
+        let (sender, _) = channel();
         assert!(PeerConnection::new(
             peer,
             info_hash,
             "client_id_1234567890".to_string(),
             Arc::new(Mutex::new(&mut stream)),
+            Arc::new(Mutex::new(sender)),
         )
         .is_err());
     }
@@ -385,11 +402,13 @@ mod tests {
             433 as u16,
         );
         let mut stream = MockTcpStream::new(handshake.clone());
+        let (sender, _) = channel();
         assert!(PeerConnection::new(
             peer,
             info_hash,
             "client_id_1234567890".to_string(),
-            Arc::new(Mutex::new(&mut stream))
+            Arc::new(Mutex::new(&mut stream)),
+            Arc::new(Mutex::new(sender)),
         )
         .is_err());
     }
@@ -410,11 +429,13 @@ mod tests {
             433 as u16,
         );
         let mut stream = MockTcpStream::new(handshake.clone());
+        let (sender, _) = channel();
         assert!(PeerConnection::new(
             peer,
             info_hash,
             "client_id_1234567890".to_string(),
-            Arc::new(Mutex::new(&mut stream))
+            Arc::new(Mutex::new(&mut stream)),
+            Arc::new(Mutex::new(sender)),
         )
         .is_err());
     }
@@ -435,11 +456,13 @@ mod tests {
             433 as u16,
         );
         let mut stream = MockTcpStream::new(handshake.clone());
+        let (sender, _) = channel();
         assert!(PeerConnection::new(
             peer,
             info_hash,
             "client_id_1234567890".to_string(),
-            Arc::new(Mutex::new(&mut stream))
+            Arc::new(Mutex::new(&mut stream)),
+            Arc::new(Mutex::new(sender)),
         )
         .is_err());
     }
@@ -461,11 +484,13 @@ mod tests {
             433 as u16,
         );
         let mut stream = MockTcpStream::new(handshake.clone());
+        let (sender, _) = channel();
         assert!(PeerConnection::new(
             peer,
             info_hash,
             "client_id_1234567890".to_string(),
-            Arc::new(Mutex::new(&mut stream))
+            Arc::new(Mutex::new(&mut stream)),
+            Arc::new(Mutex::new(sender)),
         )
         .is_ok());
     }
@@ -486,11 +511,13 @@ mod tests {
             433 as u16,
         );
         let mut stream = MockTcpStream::new(handshake.clone());
+        let (sender, _) = channel();
         let mut peer_connection = PeerConnection::new(
             peer,
             info_hash,
             "client_id_1234567890".to_string(),
             Arc::new(Mutex::new(&mut stream)),
+            Arc::new(Mutex::new(sender)),
         )
         .unwrap();
         // end init peer connection
@@ -516,11 +543,13 @@ mod tests {
             433 as u16,
         );
         let mut stream = MockTcpStream::new(handshake.clone());
+        let (sender, _) = channel();
         let mut peer_connection = PeerConnection::new(
             peer,
             info_hash,
             "client_id_1234567890".to_string(),
             Arc::new(Mutex::new(&mut stream)),
+            Arc::new(Mutex::new(sender)),
         )
         .unwrap();
         // end init peer connection
@@ -572,11 +601,13 @@ mod tests {
             433 as u16,
         );
         let mut stream = MockTcpStream::new(handshake.clone());
+        let (sender, _) = channel();
         let mut peer_connection = PeerConnection::new(
             peer,
             info_hash,
             "client_id_1234567890".to_string(),
             Arc::new(Mutex::new(&mut stream)),
+            Arc::new(Mutex::new(sender)),
         )
         .unwrap();
         // end init peer connection
@@ -600,11 +631,13 @@ mod tests {
             433 as u16,
         );
         let mut stream = MockTcpStream::new(handshake.clone());
+        let (sender, _) = channel();
         let mut peer_connection = PeerConnection::new(
             peer,
             info_hash,
             "client_id_1234567890".to_string(),
             Arc::new(Mutex::new(&mut stream)),
+            Arc::new(Mutex::new(sender)),
         )
         .unwrap();
         // end init peer connection
@@ -628,11 +661,13 @@ mod tests {
             433 as u16,
         );
         let mut stream = MockTcpStream::new(handshake.clone());
+        let (sender, _) = channel();
         let mut peer_connection = PeerConnection::new(
             peer,
             info_hash,
             "client_id_1234567890".to_string(),
             Arc::new(Mutex::new(&mut stream)),
+            Arc::new(Mutex::new(sender)),
         )
         .unwrap();
         // end init peer connection
@@ -658,11 +693,13 @@ mod tests {
             433 as u16,
         );
         let mut stream = MockTcpStream::new(handshake.clone());
+        let (sender, _) = channel();
         let mut peer_connection = PeerConnection::new(
             peer,
             info_hash,
             "client_id_1234567890".to_string(),
             Arc::new(Mutex::new(&mut stream)),
+            Arc::new(Mutex::new(sender)),
         )
         .unwrap();
         // end init peer connection
@@ -719,11 +756,13 @@ mod tests {
             433 as u16,
         );
         let mut stream = MockTcpStream::new(handshake.clone());
+        let (sender, _) = channel();
         let mut peer_connection = PeerConnection::new(
             peer,
             info_hash,
             "client_id_1234567890".to_string(),
             Arc::new(Mutex::new(&mut stream)),
+            Arc::new(Mutex::new(sender)),
         )
         .unwrap();
         // end init peer connection

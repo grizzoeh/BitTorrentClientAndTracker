@@ -1,4 +1,5 @@
 use crate::errors::download_manager_error::DownloadManagerError;
+use crate::errors::logger_error::LoggerError;
 use crate::errors::peer_connection_error::PeerConnectionError;
 use crate::errors::torrent_parser_error::TorrentParserError;
 use crate::errors::tracker_error::TrackerError;
@@ -7,6 +8,7 @@ use std::fmt::Display;
 use std::io::Error;
 use std::num::ParseIntError;
 use std::string::FromUtf8Error;
+use std::sync::mpsc::Sender;
 use std::sync::{MutexGuard, PoisonError, RwLockWriteGuard};
 
 #[derive(Debug)]
@@ -94,6 +96,22 @@ impl From<PoisonError<MutexGuard<'_, String>>> for ClientError {
     fn from(error: PoisonError<MutexGuard<'_, String>>) -> ClientError {
         ClientError {
             msg: format!("ClientError: poisoned thread ({})", error),
+        }
+    }
+}
+
+impl From<LoggerError> for ClientError {
+    fn from(error: LoggerError) -> ClientError {
+        ClientError {
+            msg: format!("ClientError: logger error ({})", error),
+        }
+    }
+}
+
+impl From<PoisonError<MutexGuard<'_, Sender<String>>>> for ClientError {
+    fn from(error: PoisonError<MutexGuard<'_, Sender<String>>>) -> ClientError {
+        ClientError {
+            msg: format!("ClientError: logger error ({})", error),
         }
     }
 }
