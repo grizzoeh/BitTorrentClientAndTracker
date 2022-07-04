@@ -2,6 +2,7 @@
 name = "crabrave"
 version = "0.1.0"
 edition = "2021"
+default-run = "main"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -9,3 +10,21 @@ edition = "2021"
 native-tls = "0.2"
 chrono = "0.4.19"
 sha1 = "0.10.1"
+rand = "0.8.4"
+gtk = { git = "https://github.com/gtk-rs/gtk3-rs.git" }
+glib = { git = "https://github.com/gtk-rs/gtk-rs-core.git", package = "glib" }
+
+
+[lib]
+name = "crabrave"
+path = "src/lib.rs"
+
+[[bin]]
+name = "main"
+path = "src/main.rs"
+
+
+
+[[bin]]
+name = "appservidor"
+path = "src/appservidor.rs"

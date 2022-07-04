@@ -312,4 +312,11 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn test_vector_to_string() {
+        let vec = vec![b'a', b'b', b'c'];
+        let str = from_vec_to_string(&vec);
+        assert_eq!(str, "abc");
+    }
 }

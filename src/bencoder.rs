@@ -259,7 +259,6 @@ mod tests {
         assert_eq!(test_list, bencode(&dict_aux).as_slice());
     }
 
-    // Encode Decodification Tests:
     #[test]
     fn encode_deco_byte_string() {
         let right = "8: AnElAp;".as_bytes().to_vec();

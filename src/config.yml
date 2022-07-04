@@ -1,5 +1,5 @@
 ---
 port: "443"
-log_path: "src/reports/logs.txt"
-download_path: "src/downloads/"
+log_path: "src/reports"
+download_path: "src/downloads"
 log_level: "5"

@@ -50,7 +50,7 @@ struct ThreadManager {
     threads: Vec<ThreadInfo>,
     ready_receiver: Receiver<WorkerId>, // to receive idle worker id
     job_receiver: Receiver<Job>,        // to receive tasks
-    _ready_sender: Sender<WorkerId>, // used in case of restarting a worker that has panicked, he will use it to send his id
+    ready_sender: Sender<WorkerId>, // used in case of restarting a worker that has panicked, he will use it to send his id
 }
 
 // store ThreadManager handler to be able to join it when dropped
@@ -74,7 +74,7 @@ impl ThreadManager {
             threads,
             ready_receiver,
             job_receiver,
-            _ready_sender: ready_sender,
+            ready_sender,
         }
     }
 
@@ -107,13 +107,13 @@ impl ThreadManager {
                 .map(|h| -> bool { h.is_finished() })
                 .unwrap_or(true)
             {
-                Self::_reset_thread(thread, id, self._ready_sender.clone());
+                Self::reset_thread(thread, id, self.ready_sender.clone());
             }
         }
     }
 
     // revive thread joining it and restarting it. Updates channels
-    fn _reset_thread(thread: &mut ThreadInfo, id: WorkerId, ready_sender: Sender<WorkerId>) {
+    fn reset_thread(thread: &mut ThreadInfo, id: WorkerId, ready_sender: Sender<WorkerId>) {
         if let Some(handle) = thread.handler.take() {
             let _res = handle.join();
         }

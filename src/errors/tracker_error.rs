@@ -1,4 +1,5 @@
 use crate::errors::bdecoder_error::BDecoderError;
+use crate::logger::LogMsg;
 use native_tls::HandshakeError;
 use std::fmt::Display;
 use std::io::Error;
@@ -32,6 +33,14 @@ impl From<Error> for TrackerError {
 
 impl From<BDecoderError> for TrackerError {
     fn from(error: BDecoderError) -> TrackerError {
+        TrackerError {
+            msg: format!("TrackerError: ({})", error),
+        }
+    }
+}
+
+impl From<SendError<LogMsg>> for TrackerError {
+    fn from(error: SendError<LogMsg>) -> TrackerError {
         TrackerError {
             msg: format!("TrackerError: ({})", error),
         }

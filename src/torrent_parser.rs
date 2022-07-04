@@ -50,6 +50,9 @@ fn get_torrent_info(
             if let Decodification::String(str_aux2) = &info_hashmap[&from_string_to_vec("pieces")] {
                 data.insert("pieces".to_string(), str_aux2.clone());
             }
+            if let Decodification::String(str_aux3) = &info_hashmap[&from_string_to_vec("name")] {
+                data.insert("name".to_string(), str_aux3.clone());
+            }
             if let Decodification::Int(lenght) = &info_hashmap[&from_string_to_vec("length")] {
                 data.insert("length".to_string(), i64_to_vecu8(lenght).to_vec());
             }
@@ -65,7 +68,6 @@ fn get_torrent_info(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::bdecoder::from_vec_to_string;
     #[test]
     fn test_announce_ubuntu_torrent() {
         let filename =
@@ -79,9 +81,14 @@ mod tests {
     }
 
     #[test]
-    fn test_vector_to_string() {
-        let vec = vec![b'a', b'b', b'c'];
-        let str = from_vec_to_string(&vec);
-        assert_eq!(str, "abc");
+    fn test_announce_ubuntu_torrent2() {
+        let filename =
+            String::from("src/torrent_test_files/ubuntu-21.10-desktop-amd64.iso.torrent");
+        let decoded = torrent_parse(&filename);
+
+        assert_eq!(
+            String::from_utf8(decoded.unwrap()["url"].clone()).unwrap(),
+            "https://torrent.ubuntu.com/announce"
+        );
     }
 }

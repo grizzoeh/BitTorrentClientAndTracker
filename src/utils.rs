@@ -6,6 +6,15 @@ use std::time::SystemTime;
 
 const ID_LENGTH: usize = 20;
 
+#[derive(Debug, Clone)]
+pub enum UiParams {
+    Usize(usize),
+    String(String),
+    U64(u64),
+    Vector(Vec<String>),
+    Integer(i64),
+}
+
 pub fn u32_to_vecu8(number: &u32) -> [u8; 4] {
     let x1: u8 = ((number >> 24) & 0xff) as u8;
     let x2: u8 = ((number >> 16) & 0xff) as u8;
@@ -33,7 +42,9 @@ pub fn vecu8_to_u32(vec: &[u8]) -> u32 {
     let x4: u32 = vec[3] as u32;
     x1 | x2 | x3 | x4
 }
-
+pub fn vecu8_to_string(vec: &[u8]) -> String {
+    String::from_utf8(vec.to_vec()).unwrap()
+}
 pub fn vecu8_to_u64(vec: &[u8]) -> u64 {
     let x1: u64 = (vec[0] as u64) << 56;
     let x2: u64 = (vec[1] as u64) << 48;
@@ -73,10 +84,44 @@ pub fn to_urlencoded(bytes: &[u8]) -> String {
         .collect()
 }
 
+pub fn to_gb(bytes: u64) -> String {
+    let gb = bytes / 1024 / 1024 / 1024;
+    let mb = bytes / 1024 / 1024 % 1024;
+    let kb = bytes / 1024 % 1024;
+    let b = bytes % 1024;
+    if gb > 0 {
+        return format!("{} GB", gb);
+    } else if mb > 0 {
+        return format!("{} MB", mb);
+    } else if kb > 0 {
+        return format!("{} KB", kb);
+    } else {
+        return format!("{} B", b);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    #[test]
+    fn test_to_gb_b() {
+        assert_eq!(to_gb(4), "4 B");
+    }
+
+    #[test]
+    fn test_to_gb_kb() {
+        assert_eq!(to_gb(3000), "2 KB");
+    }
+
+    #[test]
+    fn test_to_gb_mb() {
+        assert_eq!(to_gb(50004434), "47 MB");
+    }
+    #[test]
+    fn test_to_gb_gb() {
+        assert_eq!(to_gb(500000234234), "465 GB");
+    }
     #[test]
     fn test_u32_to_vecu8() {
         let x1: u8 = ((0x12345678 >> 24) & 0xff) as u8;

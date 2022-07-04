@@ -1,5 +1,6 @@
 use std::fmt::Display;
 use std::io::Error;
+use std::sync::mpsc::RecvError;
 
 #[derive(Debug)]
 pub struct LoggerError {
@@ -22,6 +23,14 @@ impl From<Error> for LoggerError {
     fn from(error: Error) -> LoggerError {
         LoggerError {
             msg: format!("LoggerError: error during logging ({})", error),
+        }
+    }
+}
+
+impl From<RecvError> for LoggerError {
+    fn from(error: RecvError) -> LoggerError {
+        LoggerError {
+            msg: format!("LoggerError: ({})", error),
         }
     }
 }

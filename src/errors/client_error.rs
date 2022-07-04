@@ -1,17 +1,22 @@
+use super::listener_error::ListenerError;
 use crate::errors::download_manager_error::DownloadManagerError;
 use crate::errors::logger_error::LoggerError;
 use crate::errors::peer_connection_error::PeerConnectionError;
 use crate::errors::torrent_parser_error::TorrentParserError;
 use crate::errors::tracker_error::TrackerError;
+use crate::logger::LogMsg;
 use crate::peer::Peer;
+use crate::upload_manager::PieceRequest;
+use crate::utils::UiParams;
+use glib::Sender as UISender;
 use std::fmt::Display;
 use std::io::Error;
 use std::num::ParseIntError;
 use std::string::FromUtf8Error;
-use std::sync::mpsc::Sender;
-use std::sync::{MutexGuard, PoisonError, RwLockWriteGuard};
+use std::sync::mpsc::{SendError, Sender};
+use std::sync::{MutexGuard, PoisonError, RwLockReadGuard, RwLockWriteGuard};
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct ClientError {
     msg: String,
 }
@@ -59,7 +64,13 @@ impl From<FromUtf8Error> for ClientError {
         }
     }
 }
-
+impl From<ListenerError> for ClientError {
+    fn from(error: ListenerError) -> ClientError {
+        ClientError {
+            msg: format!("ClientError: error listening on port ({})", error),
+        }
+    }
+}
 impl From<TrackerError> for ClientError {
     fn from(error: TrackerError) -> ClientError {
         ClientError {
@@ -72,6 +83,24 @@ impl From<PeerConnectionError> for ClientError {
     fn from(error: PeerConnectionError) -> ClientError {
         ClientError {
             msg: format!("ClientError: error initializing peer ({})", error),
+        }
+    }
+}
+
+impl From<PoisonError<MutexGuard<'_, UISender<Vec<(usize, UiParams, String)>>>>> for ClientError {
+    fn from(
+        error: PoisonError<MutexGuard<'_, UISender<Vec<(usize, UiParams, String)>>>>,
+    ) -> ClientError {
+        ClientError {
+            msg: format!("ClientError: poisoned error ({})", error),
+        }
+    }
+}
+
+impl From<SendError<Vec<(usize, UiParams, String)>>> for ClientError {
+    fn from(error: SendError<Vec<(usize, UiParams, String)>>) -> ClientError {
+        ClientError {
+            msg: format!("ClientError: send error ({})", error),
         }
     }
 }
@@ -99,7 +128,20 @@ impl From<PoisonError<MutexGuard<'_, String>>> for ClientError {
         }
     }
 }
-
+impl From<PoisonError<MutexGuard<'_, Vec<u8>>>> for ClientError {
+    fn from(error: PoisonError<MutexGuard<'_, Vec<u8>>>) -> ClientError {
+        ClientError {
+            msg: format!("ClientError: poisoned thread ({})", error),
+        }
+    }
+}
+impl From<PoisonError<RwLockReadGuard<'_, u64>>> for ClientError {
+    fn from(error: PoisonError<RwLockReadGuard<'_, u64>>) -> ClientError {
+        ClientError {
+            msg: format!("ClientError: poisoned thread ({})", error),
+        }
+    }
+}
 impl From<LoggerError> for ClientError {
     fn from(error: LoggerError) -> ClientError {
         ClientError {
@@ -108,6 +150,13 @@ impl From<LoggerError> for ClientError {
     }
 }
 
+impl From<PoisonError<MutexGuard<'_, Sender<LogMsg>>>> for ClientError {
+    fn from(error: PoisonError<MutexGuard<'_, Sender<LogMsg>>>) -> ClientError {
+        ClientError {
+            msg: format!("ClientError: logger error ({})", error),
+        }
+    }
+}
 impl From<PoisonError<MutexGuard<'_, Sender<String>>>> for ClientError {
     fn from(error: PoisonError<MutexGuard<'_, Sender<String>>>) -> ClientError {
         ClientError {
@@ -116,8 +165,49 @@ impl From<PoisonError<MutexGuard<'_, Sender<String>>>> for ClientError {
     }
 }
 
-impl Default for ClientError {
-    fn default() -> Self {
-        Self::new("ClientError: error during client initialization".to_string())
+impl From<PoisonError<MutexGuard<'_, Sender<Option<PieceRequest>>>>> for ClientError {
+    fn from(error: PoisonError<MutexGuard<'_, Sender<Option<PieceRequest>>>>) -> ClientError {
+        ClientError {
+            msg: format!("ClientError: ({})", error),
+        }
+    }
+}
+impl From<SendError<Vec<(usize, UiParams)>>> for ClientError {
+    fn from(error: SendError<Vec<(usize, UiParams)>>) -> ClientError {
+        ClientError {
+            msg: format!("ClientError: error sending to ui ({})", error),
+        }
+    }
+}
+
+impl From<SendError<String>> for ClientError {
+    fn from(error: SendError<String>) -> ClientError {
+        ClientError {
+            msg: format!("ClientError: ({})", error),
+        }
+    }
+}
+
+impl From<SendError<LogMsg>> for ClientError {
+    fn from(error: SendError<LogMsg>) -> ClientError {
+        ClientError {
+            msg: format!("ClientError: ({})", error),
+        }
+    }
+}
+
+impl From<SendError<Option<PieceRequest>>> for ClientError {
+    fn from(error: SendError<Option<PieceRequest>>) -> ClientError {
+        ClientError {
+            msg: format!("ClientError: ({})", error),
+        }
+    }
+}
+
+impl From<PoisonError<MutexGuard<'_, Sender<Vec<(usize, UiParams)>>>>> for ClientError {
+    fn from(error: PoisonError<MutexGuard<'_, Sender<Vec<(usize, UiParams)>>>>) -> ClientError {
+        ClientError {
+            msg: format!("ClientError: error creating ui channel ({})", error),
+        }
     }
 }

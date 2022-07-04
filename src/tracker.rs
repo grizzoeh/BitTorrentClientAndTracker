@@ -1,5 +1,6 @@
 use crate::bdecoder::{bdecode, from_string_to_vec, from_vec_to_string, Decodification};
 use crate::errors::tracker_error::TrackerError;
+use crate::logger::LogMsg;
 use crate::peer::Peer;
 use crate::utils::to_urlencoded;
 use native_tls::{TlsConnector, TlsStream};
@@ -8,6 +9,7 @@ use std::io::{Read, Write};
 use std::net::TcpStream;
 use std::str;
 use std::sync::mpsc::Sender;
+use std::sync::Arc;
 
 #[derive(Debug, PartialEq)]
 pub struct Tracker {
@@ -18,16 +20,28 @@ pub struct Tracker {
     pub info_hash: Vec<u8>,
 }
 
-impl Tracker {
-    pub fn new(
+pub trait TrackerInterface {
+    fn create(
         info: HashMap<String, String>,
         info_hash: Vec<u8>,
-        sender_logger: Sender<String>,
-    ) -> Result<Tracker, TrackerError> {
+        sender_logger: Sender<LogMsg>,
+    ) -> Result<Arc<(dyn TrackerInterface + Send + 'static)>, TrackerError>
+    where
+        Self: Sized;
+    fn get_peers(&self) -> Result<Vec<Peer>, TrackerError>;
+    fn get_info_hash(&self) -> Vec<u8>;
+}
+
+impl TrackerInterface for Tracker {
+    fn create(
+        info: HashMap<String, String>,
+        info_hash: Vec<u8>,
+        sender_logger: Sender<LogMsg>,
+    ) -> Result<Arc<(dyn TrackerInterface + Send + 'static)>, TrackerError> {
         println!("CONNECTING WITH THE TRACKER");
-        sender_logger.send("CONNECTING WITH THE TRACKER".to_string())?; // Preguntar si falla el logger hay que frenar ejecucion
+        sender_logger.send(LogMsg::Info("CONNECTING WITH THE TRACKER".to_string()))?;
         let response = request_tracker(info, &info_hash)?;
-        sender_logger.send("RESPONSE OBTAINED SUCCESSFULLY".to_string())?;
+        sender_logger.send(LogMsg::Info("RESPONSE OBTAINED SUCCESSFULLY".to_string()))?;
         println!("RESPONSE OBTAINED SUCCESSFULLY");
 
         if let Decodification::Dic(dic_aux) = response {
@@ -38,13 +52,17 @@ impl Tracker {
                 peers: dic_aux[&from_string_to_vec("peers")].clone(),
                 info_hash,
             };
-            Ok(tracker)
+            Ok(Arc::new(tracker))
         } else {
             Err(TrackerError::new("Expected Dic not found".to_string()))
         }
     }
 
-    pub fn get_peers(&self) -> Result<Vec<Peer>, TrackerError> {
+    fn get_info_hash(&self) -> Vec<u8> {
+        self.info_hash.clone()
+    }
+
+    fn get_peers(&self) -> Result<Vec<Peer>, TrackerError> {
         if let Decodification::List(peer_list) = &self.peers {
             let mut peers = Vec::new();
             for peer in peer_list.iter() {
@@ -185,13 +203,10 @@ mod tests {
         let (sender, receiver) = channel();
         let mut logger = Logger::new("src/reports/logs.txt".to_string(), receiver).unwrap();
         spawn(move || logger.start());
-        let tracker = Tracker::new(info, info_hash, sender).unwrap();
+        let tracker = Tracker::create(info, info_hash, sender).unwrap();
 
-        println!("{:?}", tracker);
-        let peers = tracker.peers.clone();
-        if let Decodification::List(peer_list) = peers {
-            assert_ne!(peer_list.len(), 0);
-        }
+        let peers = tracker.get_peers().unwrap();
+        assert_ne!(peers.len(), 0);
     }
 
     #[test]
@@ -211,7 +226,7 @@ mod tests {
         .to_vec();
 
         let (sender, _) = channel();
-        assert!(Tracker::new(info, info_hash, sender).is_err());
+        assert!(Tracker::create(info, info_hash, sender).is_err());
     }
 
     #[test]
@@ -231,7 +246,7 @@ mod tests {
         let info_hash = [].to_vec();
 
         let (sender, _) = channel();
-        assert!(Tracker::new(info, info_hash, sender).is_err());
+        assert!(Tracker::create(info, info_hash, sender).is_err());
     }
 
     #[test]
