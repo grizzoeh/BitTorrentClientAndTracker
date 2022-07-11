@@ -1,6 +1,4 @@
-use std::fmt::Display;
-use std::io::Error;
-use std::sync::mpsc::RecvError;
+use std::{fmt::Display, io::Error, sync::mpsc::RecvError};
 
 #[derive(Debug)]
 pub struct LoggerError {

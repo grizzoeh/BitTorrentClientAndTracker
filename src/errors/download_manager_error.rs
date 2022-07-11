@@ -1,19 +1,24 @@
 use super::client_error::ClientError;
-use crate::download_manager::{DownloaderInfo, PieceInfo, PieceStatus};
-use crate::errors::peer_connection_error::PeerConnectionError;
-use crate::logger::LogMsg;
-use crate::peer::Peer;
-use crate::peer_connection::PeerConnection;
-use crate::upload_manager::PieceRequest;
-use crate::utils::UiParams;
+use crate::{
+    download_manager::{DownloaderInfo, PieceInfo, PieceStatus},
+    errors::peer_connection_error::PeerConnectionError,
+    logger::LogMsg,
+    peer_entities::peer::Peer,
+    peer_entities::peer_connection::PeerConnection,
+    upload_manager::PieceRequest,
+    utilities::utils::UiParams,
+};
 use glib::Sender as UISender;
-use std::any::Any;
-use std::fmt::Display;
-use std::io::Error;
-use std::sync::mpsc::{Receiver, RecvError};
-use std::sync::mpsc::{SendError, Sender};
-use std::sync::Arc;
-use std::sync::{MutexGuard, PoisonError, RwLockReadGuard, RwLockWriteGuard};
+use std::{
+    any::Any,
+    fmt::Display,
+    io::Error,
+    sync::mpsc::{Receiver, RecvError},
+    sync::mpsc::{SendError, Sender},
+    sync::Arc,
+    sync::{MutexGuard, PoisonError, RwLockReadGuard, RwLockWriteGuard},
+    thread::JoinHandle,
+};
 
 #[derive(Debug)]
 pub struct DownloadManagerError {
@@ -39,6 +44,7 @@ impl From<Error> for DownloadManagerError {
         }
     }
 }
+
 impl From<ClientError> for DownloadManagerError {
     fn from(error: ClientError) -> DownloadManagerError {
         DownloadManagerError {
@@ -46,8 +52,33 @@ impl From<ClientError> for DownloadManagerError {
         }
     }
 }
+
+impl From<PoisonError<MutexGuard<'_, usize>>> for DownloadManagerError {
+    fn from(error: PoisonError<MutexGuard<'_, usize>>) -> DownloadManagerError {
+        DownloadManagerError {
+            msg: format!("DownloadManagerError: ({})", error),
+        }
+    }
+}
+
 impl From<PeerConnectionError> for DownloadManagerError {
     fn from(error: PeerConnectionError) -> DownloadManagerError {
+        DownloadManagerError {
+            msg: format!("DownloadManagerError: ({})", error),
+        }
+    }
+}
+
+impl From<PoisonError<MutexGuard<'_, PieceStatus>>> for DownloadManagerError {
+    fn from(error: PoisonError<MutexGuard<'_, PieceStatus>>) -> DownloadManagerError {
+        DownloadManagerError {
+            msg: format!("DownloadManagerError: ({})", error),
+        }
+    }
+}
+
+impl From<PoisonError<MutexGuard<'_, Vec<JoinHandle<()>>>>> for DownloadManagerError {
+    fn from(error: PoisonError<MutexGuard<'_, Vec<JoinHandle<()>>>>) -> DownloadManagerError {
         DownloadManagerError {
             msg: format!("DownloadManagerError: ({})", error),
         }

@@ -1,13 +1,14 @@
-use crate::download_manager::PieceStatus;
-use crate::errors::communication_method_error::CommunicationMethodError;
-use crate::errors::peer_connection_error::PeerConnectionError;
-use crate::logger::LogMsg;
-use crate::peer::Peer;
-use crate::utils::UiParams;
-use std::fmt::Display;
-use std::io::Error;
-use std::sync::mpsc::{RecvError, SendError};
-use std::sync::{MutexGuard, PoisonError, RwLockReadGuard, RwLockWriteGuard};
+use crate::{
+    download_manager::PieceStatus, errors::communication_method_error::CommunicationMethodError,
+    errors::peer_connection_error::PeerConnectionError, logger::LogMsg, peer_entities::peer::Peer,
+    utilities::utils::UiParams,
+};
+use std::{
+    fmt::Display,
+    io::Error,
+    sync::mpsc::{RecvError, SendError},
+    sync::{MutexGuard, PoisonError, RwLockReadGuard, RwLockWriteGuard},
+};
 
 use super::client_error::ClientError;
 

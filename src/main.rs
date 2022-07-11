@@ -1,24 +1,22 @@
-use crabrave::args::get_torrents_paths;
-use crabrave::client::{Client, ClientInterface};
-use crabrave::config_parser::config_parse;
-use crabrave::constants::*;
-use crabrave::torrent_parser::torrent_parse;
-use gtk::prelude::*;
-use gtk::*;
-use gtk::{Builder, Grid, Label, Window};
-use std::collections::HashMap;
-use std::env;
-use std::sync::mpsc::{channel, Receiver, Sender};
-use std::sync::{Arc, Mutex};
-extern crate native_tls;
-use crabrave::errors::download_manager_error::DownloadManagerError;
-use crabrave::errors::listener_error::ListenerError;
-use crabrave::errors::logger_error::LoggerError;
-use crabrave::errors::upload_manager_error::UploadManagerError;
-use crabrave::ui_codes::*;
-use crabrave::utils::{to_gb, UiParams};
-use std::thread::{spawn, JoinHandle};
+use crabrave::{
+    client::{Client, ClientInterface},
+    parsing::args::get_torrents_paths,
+    parsing::config_parser::config_parse,
+    parsing::torrent_parser::torrent_parse,
+    ui::ui_codes::*,
+    utilities::constants::*,
+    utilities::utils::{to_gb, UiParams},
+};
+use gtk::{prelude::*, Builder, Grid, Label, Window, *};
+use std::{
+    collections::HashMap,
+    env,
+    sync::mpsc::{channel, Receiver, Sender},
+    sync::{Arc, Mutex},
+    thread::{spawn, JoinHandle},
+};
 
+/// Initializes the entire application.
 #[allow(clippy::type_complexity)]
 pub fn main() {
     let args: Vec<String> = env::args().collect();
@@ -42,12 +40,7 @@ pub fn main() {
 
     let client_sender = aux_rx.recv().unwrap();
 
-    let mut handles: Vec<(
-        JoinHandle<Result<(), LoggerError>>,
-        JoinHandle<Result<(), DownloadManagerError>>,
-        JoinHandle<Result<(), ListenerError>>,
-        JoinHandle<Result<(), UploadManagerError>>,
-    )> = Vec::new();
+    let mut handles: Vec<JoinHandle<()>> = Vec::new();
 
     let mut port_counter = 0;
     for torrent_path in torrent_paths_aux {
@@ -57,8 +50,7 @@ pub fn main() {
         config.insert("torrent_path".to_string(), torrent_path.clone());
         let torrent_data = match torrent_parse(&torrent_path) {
             Ok(data) => data,
-            Err(e) => {
-                println!("Error parsing torrent:{}, Error:{}", torrent_path, e);
+            Err(_) => {
                 continue;
             }
         };
@@ -68,26 +60,27 @@ pub fn main() {
         let (client, logger_handler) =
             Client::create(config, ui_sender, torrent_path_aux1, port, torrent_data).unwrap();
 
-        let (download_handle, listener_handle, upload_handle) = client.start().unwrap();
-        handles.push((
-            logger_handler,
-            download_handle,
-            listener_handle,
-            upload_handle,
-        ));
+        let (download_handler, listener_handler, upload_handler) = client.start().unwrap();
+        handles.push(logger_handler);
+        handles.push(download_handler);
+        handles.push(listener_handler);
+        handles.push(upload_handler);
 
         port_counter += 1;
     }
 
-    for handle_tuple in handles {
-        let _ = handle_tuple.0.join().unwrap();
-        let _ = handle_tuple.1.join().unwrap();
-        let _ = handle_tuple.2.join().unwrap();
-        let _ = handle_tuple.3.join().unwrap();
+    // Waits for the threads to finish
+    while !handles.is_empty() {
+        match handles.pop() {
+            Some(handle) => handle.join().unwrap(),
+            None => break,
+        };
     }
+    // Waits for the UI thread to finish
     ui_handle.join().unwrap();
 }
 
+/// Runs the UI.
 fn run_ui(
     sender_aux: Sender<glib::Sender<Vec<(usize, UiParams, String)>>>,
     torrent_paths: Vec<String>,
@@ -99,6 +92,7 @@ fn run_ui(
     application.run_with_args(&[""]);
 }
 
+/// Builds the UI and all of its components.
 #[allow(clippy::type_complexity)]
 fn build_ui(
     application: &gtk::Application,
@@ -112,7 +106,7 @@ fn build_ui(
 
     sender_aux.send(sender_client).unwrap();
 
-    let glade_src = include_str!("gtk.tabs.ui");
+    let glade_src = include_str!("ui/gtk.tabs.ui");
     let builder = Builder::from_string(glade_src);
 
     let grid: Grid = builder
@@ -152,8 +146,8 @@ fn build_ui(
     let label_id1: Label = gtk::Label::new(Some("ID"));
     let label_ip1 = gtk::Label::new(Some("IP"));
     let label_port1 = gtk::Label::new(Some("Port"));
-    let label_download_speed1 = gtk::Label::new(Some("Downloaded Speed"));
-    let label_upload_speed1 = gtk::Label::new(Some("Uploaded Speed"));
+    let label_download_speed1 = gtk::Label::new(Some("Download Speed"));
+    let label_upload_speed1 = gtk::Label::new(Some("Upload Speed"));
     let label_peer_status1 = gtk::Label::new(Some("Peer Status"));
     let label_client_status1 = gtk::Label::new(Some("Client Status"));
     let label_filenam1 = gtk::Label::new(Some("File Name"));
@@ -287,12 +281,23 @@ fn build_ui(
                         }
                     }
                     *dic_torrents.get_mut(current_torrent).unwrap() = dic_aux;
+
                     let label = &labels.get_mut(&vector[0]).unwrap()[1];
                     label.set_label(vector[1].as_str());
                 }
                 glib::Continue(true)
             }
             DELETE_ONE_ACTIVE_CONNECTION => {
+                // Changes the peer status to disconnected
+                if let UiParams::Vector(vector) = param {
+                    let label = &labels.get_mut(&vector[0]).unwrap();
+                    label[0].set_label("0 bytes / sec");
+                    label[1].set_label("0 bytes / sec");
+                    label[2].set_label("Disconnected");
+                    label[3].set_label("Disconnected");
+                }
+
+                // Reduces the number of active connections
                 let current_torrent_hash = &dic_torrents[current_torrent];
                 let mut dic_aux = HashMap::<String, Vec<String>>::new();
 
@@ -472,7 +477,7 @@ fn build_ui(
                     let mut dic_aux = HashMap::<String, Vec<String>>::new();
 
                     for key in current_torrent_hash.keys() {
-                        if key == "downloaded_pieces" {
+                        if key == "downloaded_pieces" || key == "verified_pieces" {
                             dic_aux.insert(
                                 key.to_string(),
                                 vec![cont_num_downloaded_pieces.to_string()],
@@ -1162,10 +1167,7 @@ fn build_ui(
                 }
                 glib::Continue(true)
             }
-            _ => {
-                println!("{:?}", param);
-                glib::Continue(true)
-            }
+            _ => glib::Continue(true),
         }
     });
 

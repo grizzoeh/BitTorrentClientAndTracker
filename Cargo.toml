@@ -23,8 +23,6 @@ path = "src/lib.rs"
 name = "main"
 path = "src/main.rs"
 
-
-
 [[bin]]
-name = "appservidor"
-path = "src/appservidor.rs"
+name = "app_server"
+path = "src/test_files/app_server.rs"

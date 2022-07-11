@@ -1,10 +1,6 @@
-use crate::errors::bdecoder_error::BDecoderError;
-use crate::logger::LogMsg;
+use crate::{errors::bdecoder_error::BDecoderError, logger::LogMsg};
 use native_tls::HandshakeError;
-use std::fmt::Display;
-use std::io::Error;
-use std::net::TcpStream;
-use std::sync::mpsc::SendError;
+use std::{fmt::Display, io::Error, net::TcpStream, sync::mpsc::SendError};
 
 #[derive(Debug)]
 pub struct TrackerError {

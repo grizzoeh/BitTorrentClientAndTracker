@@ -1,6 +1,0 @@
----
-log_path: "reports/logs"
-download_path: "reports/docs"
-port: "7001"
-log_level: "5"
-pepito: "pepita"

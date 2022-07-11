@@ -1,42 +1,40 @@
-use crate::communication_method::CommunicationMethod;
-use crate::communication_method::TCP;
-use crate::download_manager::DownloadManager;
-use crate::download_manager::DownloaderInfo;
-use crate::errors::client_error::ClientError;
-use crate::errors::download_manager_error::DownloadManagerError;
-use crate::errors::listener_error::ListenerError;
-use crate::errors::logger_error::LoggerError;
-use crate::errors::upload_manager_error::UploadManagerError;
-use crate::listener::Listener;
-use crate::logger::LogMsg;
-use crate::logger::Logger;
-use crate::peer::Peer;
-use crate::peer_connection::PeerConnection;
-use crate::tracker::Tracker;
-use crate::tracker::TrackerInterface;
-use crate::ui_codes::*;
-use crate::upload_manager::PieceRequest;
-use crate::upload_manager::UploadManager;
-use crate::utils::create_id;
-use crate::utils::vecu8_to_string;
-use crate::utils::vecu8_to_u64;
-use crate::utils::UiParams;
-use std::collections::HashMap;
-use std::sync::mpsc;
-use std::sync::mpsc::Receiver;
-use std::sync::mpsc::{channel, Sender};
-use std::sync::RwLock;
-use std::sync::{Arc, Mutex};
-use std::thread::spawn;
-use std::thread::JoinHandle;
-extern crate chrono;
+use crate::{
+    download_manager::DownloadManager,
+    download_manager::DownloaderInfo,
+    errors::client_error::ClientError,
+    listener::Listener,
+    logger::LogMsg,
+    logger::Logger,
+    peer_entities::communication_method::CommunicationMethod,
+    peer_entities::communication_method::TCP,
+    peer_entities::peer::Peer,
+    peer_entities::peer_connection::PeerConnection,
+    tracker::Tracker,
+    tracker::TrackerInterface,
+    ui::ui_codes::*,
+    upload_manager::PieceRequest,
+    upload_manager::UploadManager,
+    utilities::utils::{create_id, vecu8_to_string, vecu8_to_u64, UiParams},
+};
 use glib::Sender as UISender;
+use std::{
+    collections::HashMap,
+    sync::mpsc,
+    sync::mpsc::Receiver,
+    sync::mpsc::{channel, Sender},
+    sync::RwLock,
+    sync::{Arc, Mutex},
+    thread::spawn,
+    thread::JoinHandle,
+};
 
+/// This struct is the responsible of creating the different parts of the application, such as the logger, listener, tracker, upload manager and download manager.
 #[allow(clippy::type_complexity)]
 pub struct Client {
     pub peers: Arc<RwLock<Vec<Arc<PeerConnection<Peer>>>>>,
     pub torrent_path: String,
     pub download_path: Mutex<String>,
+    pub download_pieces_path: Mutex<String>,
     pub logger_sender: Arc<Mutex<Sender<LogMsg>>>,
     pub torrent_name: String,
     pub tracker: Arc<dyn TrackerInterface>,
@@ -63,49 +61,32 @@ pub trait ClientInterface {
         torrent_name: String,
         port_listener: u16,
         torrent_data: HashMap<String, Vec<u8>>,
-    ) -> Result<
-        (
-            Arc<dyn ClientInterface>,
-            JoinHandle<Result<(), LoggerError>>,
-        ),
-        ClientError,
-    >
+    ) -> Result<(Arc<dyn ClientInterface>, JoinHandle<()>), ClientError>
     where
         Self: Sized;
 
     #[allow(clippy::type_complexity)]
     fn start(
         self: Arc<Self>,
-    ) -> Result<
-        (
-            JoinHandle<Result<(), DownloadManagerError>>,
-            JoinHandle<Result<(), ListenerError>>,
-            JoinHandle<Result<(), UploadManagerError>>,
-        ),
-        ClientError,
-    >;
+    ) -> Result<(JoinHandle<()>, JoinHandle<()>, JoinHandle<()>), ClientError>;
 
     fn get_info_hash(&self) -> Vec<u8>;
 }
 
 #[allow(clippy::type_complexity)]
 impl ClientInterface for Client {
+    /// This function is responsible for creating the client and connect with the tracker.
     fn create(
         config: HashMap<String, String>,
         sender_client: Arc<Mutex<UISender<Vec<(usize, UiParams, String)>>>>,
         torrent_name: String,
         port_listener: u16,
         torrent_data: HashMap<String, Vec<u8>>,
-    ) -> Result<
-        (
-            Arc<(dyn ClientInterface + 'static)>,
-            JoinHandle<Result<(), LoggerError>>,
-        ),
-        ClientError,
-    > {
+    ) -> Result<(Arc<(dyn ClientInterface + 'static)>, JoinHandle<()>), ClientError> {
         let id = create_id();
         let log_path = config["log_path"].clone();
-        let mut download_path = config["download_path"].clone();
+        let download_path = config["download_path"].clone();
+        let mut download_pieces_path = "src/downloaded_pieces".to_string();
         let torrent_path = config["torrent_path"].clone();
         let port = config["port"].clone().parse::<u16>()?;
 
@@ -122,14 +103,14 @@ impl ClientInterface for Client {
         let real_name = split_filename
             .next_back()
             .ok_or_else(|| ClientError::new("Error spliting name of filename".to_string()))?;
-        download_path.push('/');
 
-        download_path.push_str(real_name);
-        if !std::path::Path::new(&download_path).exists() {
-            std::fs::create_dir_all(&download_path)?;
+        download_pieces_path.push('/');
+
+        download_pieces_path.push_str(real_name);
+        if !std::path::Path::new(&download_pieces_path).exists() {
+            std::fs::create_dir_all(&download_pieces_path)?;
         }
 
-        println!("DOWNLOAD PATH {}", &download_path);
         sender_client.lock()?.send(vec![(
             UPDATE_TOTAL_SIZE,
             UiParams::U64(vecu8_to_u64(&torrent_data["length"])),
@@ -157,7 +138,9 @@ impl ClientInterface for Client {
 
         let (logger_sender, logger_receiver) = channel();
         let mut logger = Logger::new(log_path_aux, logger_receiver)?;
-        let _logger_handler = spawn(move || logger.start());
+        let _logger_handler = spawn(move || {
+            let _r = logger.start();
+        });
 
         let tracker = Tracker::create(
             info,
@@ -168,6 +151,7 @@ impl ClientInterface for Client {
         let (upload_sender, upload_receiver) = channel();
 
         let peers = tracker.get_peers()?;
+
         sender_client.lock()?.send(vec![(
             UPDATE_PEERS_NUMBER,
             UiParams::Usize(peers.len()),
@@ -189,7 +173,8 @@ impl ClientInterface for Client {
 
         let client = Arc::new(Client {
             torrent_path,
-            download_path: Mutex::new(download_path.clone()),
+            download_path: Mutex::new(download_path),
+            download_pieces_path: Mutex::new(download_pieces_path.clone()),
             id,
             uploaded,
             downloaded,
@@ -211,20 +196,15 @@ impl ClientInterface for Client {
         Ok((client, _logger_handler))
     }
 
+    /// This function starts the application and all the different parts of the application in differents threads
+    /// Returns JoinHandlers for DownloadManager, Listener and UploadManager.
     fn start(
         self: Arc<Self>,
-    ) -> Result<
-        (
-            JoinHandle<Result<(), DownloadManagerError>>,
-            JoinHandle<Result<(), ListenerError>>,
-            JoinHandle<Result<(), UploadManagerError>>,
-        ),
-        ClientError,
-    > {
+    ) -> Result<(JoinHandle<()>, JoinHandle<()>, JoinHandle<()>), ClientError> {
         let downloader_info = DownloaderInfo {
-            length: *self.file_length.read()?,
             piece_length: *self.pieces_length.read()?,
             download_path: self.download_path.lock()?.clone(),
+            download_pieces_path: self.download_pieces_path.lock()?.clone(),
             logger_sender: self.logger_sender.clone(),
             pieces_hash: self.pieces.clone(),
             peers: self.peers.clone(),
@@ -237,7 +217,7 @@ impl ClientInterface for Client {
         };
         let download_manager = DownloadManager::new(downloader_info)?;
         let listener_channel = mpsc::channel();
-        let bitfield = download_manager.clone().get_bitfield();
+        let bitfield = download_manager.bitfield.clone();
         let listener = Listener::new(
             format!("127.0.0.1:{}", self.port_listener).as_str(),
             bitfield.clone(),
@@ -246,65 +226,35 @@ impl ClientInterface for Client {
             self.upload_sender.clone(),
             self.id.clone(),
             self.get_info_hash(),
+            self.sender_client.clone(),
+            self.torrent_name.clone(),
         )?;
         let upload_manager = UploadManager::new(
             self.logger_sender.clone().lock()?.clone(),
-            self.download_path.lock()?.clone(),
+            self.download_pieces_path.lock()?.clone(),
             bitfield,
             self.upload_receiver.clone(),
             Arc::new(Mutex::new(listener_channel.0)),
         );
 
-        let _download_handle = spawn(move || download_manager.start_download());
-        let _listener_handle = spawn(move || listener.listen());
+        let download_handle = spawn(move || {
+            let _r = download_manager.start_download();
+        });
+        let listener_handle = spawn(move || {
+            let _r = listener.listen();
+        });
 
         let sender_client_cp = self.sender_client.clone();
         let torrent_name_cp = self.torrent_name.clone();
 
-        let _upload_handle =
-            spawn(move || upload_manager.start_uploader(sender_client_cp, torrent_name_cp));
+        let upload_handle = spawn(move || {
+            let _r = upload_manager.start_uploader(sender_client_cp, torrent_name_cp);
+        });
 
-        Ok((_download_handle, _listener_handle, _upload_handle))
+        Ok((download_handle, listener_handle, upload_handle))
     }
 
     fn get_info_hash(&self) -> Vec<u8> {
         self.tracker.get_info_hash()
     }
 }
-
-/*
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_client_new_ok_config() {
-        let config = HashMap::from([
-            ("port".to_string(), "443".to_string()),
-            (
-                "torrent_path".to_string(),
-                "src/torrent_files/ubuntu-22.04-desktop-amd64.iso.torrent".to_string(),
-            ),
-            ("log_level".to_string(), "5".to_string()),
-            ("download_path".to_string(), "src/downloads/".to_string()),
-            ("log_path".to_string(), "src/reports/logs".to_string()),
-        ]);
-        assert!(Client::init(config).is_ok());
-    }
-
-    #[test]
-    fn test_client_new_wrong_torrent_path() {
-        let config = HashMap::from([
-            ("port".to_string(), "443".to_string()),
-            (
-                "torrent_path".to_string(),
-                "src/torrent_files/wrong_path.iso.torrent".to_string(),
-            ),
-            ("log_level".to_string(), "5".to_string()),
-            ("download_path".to_string(), "src/downloads/".to_string()),
-            ("log_path".to_string(), "reports/logs".to_string()),
-        ]);
-        assert!(Client::init(config).is_err());
-    }
-}
-*/

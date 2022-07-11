@@ -1,20 +1,24 @@
 use super::listener_error::ListenerError;
-use crate::errors::download_manager_error::DownloadManagerError;
-use crate::errors::logger_error::LoggerError;
-use crate::errors::peer_connection_error::PeerConnectionError;
-use crate::errors::torrent_parser_error::TorrentParserError;
-use crate::errors::tracker_error::TrackerError;
-use crate::logger::LogMsg;
-use crate::peer::Peer;
-use crate::upload_manager::PieceRequest;
-use crate::utils::UiParams;
+use crate::{
+    errors::{
+        download_manager_error::DownloadManagerError, logger_error::LoggerError,
+        peer_connection_error::PeerConnectionError, torrent_parser_error::TorrentParserError,
+        tracker_error::TrackerError,
+    },
+    logger::LogMsg,
+    peer_entities::peer::Peer,
+    upload_manager::PieceRequest,
+    utilities::utils::UiParams,
+};
 use glib::Sender as UISender;
-use std::fmt::Display;
-use std::io::Error;
-use std::num::ParseIntError;
-use std::string::FromUtf8Error;
-use std::sync::mpsc::{SendError, Sender};
-use std::sync::{MutexGuard, PoisonError, RwLockReadGuard, RwLockWriteGuard};
+use std::{
+    fmt::Display,
+    io::Error,
+    num::ParseIntError,
+    string::FromUtf8Error,
+    sync::mpsc::{SendError, Sender},
+    sync::{MutexGuard, PoisonError, RwLockReadGuard, RwLockWriteGuard},
+};
 
 #[derive(Debug, Default)]
 pub struct ClientError {

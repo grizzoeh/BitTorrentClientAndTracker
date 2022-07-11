@@ -1,23 +1,26 @@
-use crate::bdecoder::{bdecode, from_string_to_vec, from_vec_to_string, Decodification};
-use crate::errors::tracker_error::TrackerError;
-use crate::logger::LogMsg;
-use crate::peer::Peer;
-use crate::utils::to_urlencoded;
-use native_tls::{TlsConnector, TlsStream};
-use std::collections::HashMap;
-use std::io::{Read, Write};
-use std::net::TcpStream;
-use std::str;
-use std::sync::mpsc::Sender;
-use std::sync::Arc;
+use crate::{
+    errors::tracker_error::TrackerError,
+    logger::LogMsg,
+    parsing::bdecoder::{bdecode, from_string_to_vec, from_vec_to_string, Decodification},
+    peer_entities::peer::Peer,
+    utilities::constants::NUMBER_OF_PEERS_TO_ORDER,
+    utilities::utils::to_urlencoded,
+};
+use std::{
+    collections::HashMap,
+    io::{Read, Write},
+    net::TcpStream,
+    str,
+    sync::mpsc::Sender,
+    sync::Arc,
+};
 
+/// This struct is used to initialize connection with the tracker and store its information.
 #[derive(Debug, PartialEq)]
 pub struct Tracker {
-    pub interval: Decodification,
-    pub complete: Decodification,
-    pub incomplete: Decodification,
     pub peers: Decodification,
     pub info_hash: Vec<u8>,
+    pub interval: Decodification,
 }
 
 pub trait TrackerInterface {
@@ -33,22 +36,20 @@ pub trait TrackerInterface {
 }
 
 impl TrackerInterface for Tracker {
+    /// Creates the tracker object and initializes the connection with the tracker.
     fn create(
         info: HashMap<String, String>,
         info_hash: Vec<u8>,
         sender_logger: Sender<LogMsg>,
     ) -> Result<Arc<(dyn TrackerInterface + Send + 'static)>, TrackerError> {
-        println!("CONNECTING WITH THE TRACKER");
         sender_logger.send(LogMsg::Info("CONNECTING WITH THE TRACKER".to_string()))?;
         let response = request_tracker(info, &info_hash)?;
         sender_logger.send(LogMsg::Info("RESPONSE OBTAINED SUCCESSFULLY".to_string()))?;
-        println!("RESPONSE OBTAINED SUCCESSFULLY");
 
         if let Decodification::Dic(dic_aux) = response {
             let tracker = Tracker {
                 interval: dic_aux[&from_string_to_vec("interval")].clone(),
-                complete: dic_aux[&from_string_to_vec("complete")].clone(),
-                incomplete: dic_aux[&from_string_to_vec("incomplete")].clone(),
+
                 peers: dic_aux[&from_string_to_vec("peers")].clone(),
                 info_hash,
             };
@@ -58,10 +59,12 @@ impl TrackerInterface for Tracker {
         }
     }
 
+    /// Returns the info hash,
     fn get_info_hash(&self) -> Vec<u8> {
         self.info_hash.clone()
     }
 
+    /// Takes a vector of bencoded peers and returns a vector of bdecoded peers.
     fn get_peers(&self) -> Result<Vec<Peer>, TrackerError> {
         if let Decodification::List(peer_list) = &self.peers {
             let mut peers = Vec::new();
@@ -71,16 +74,14 @@ impl TrackerInterface for Tracker {
                         Some(Decodification::String(ip)) => ip,
                         _ => return Err(TrackerError::new("missing ip".to_string())),
                     };
+
                     let peer_port = match peer_dict.get(&from_string_to_vec("port")) {
                         Some(Decodification::Int(port)) => *port as u16,
                         _ => return Err(TrackerError::new("missing port".to_string())),
                     };
-                    let peer_id = match peer_dict.get(&from_string_to_vec("peer id")) {
-                        Some(Decodification::String(id)) => id,
-                        _ => return Err(TrackerError::new("missing id".to_string())),
-                    };
+
                     let peer = Peer::new(
-                        from_vec_to_string(peer_id),
+                        from_vec_to_string(&from_string_to_vec("default_id")),
                         from_vec_to_string(peer_ip),
                         peer_port,
                     );
@@ -93,11 +94,11 @@ impl TrackerInterface for Tracker {
     }
 }
 
+/// This function is used to request the tracker with the given info and info_hash.
 fn request_tracker(
     info: HashMap<String, String>,
     info_hash: &[u8],
 ) -> Result<Decodification, TrackerError> {
-    // Request tracker info
     let mut stream = start_connection(info["URL"].clone(), info["port"].clone())?;
 
     let url = info["URL"].split("//").collect::<Vec<&str>>()[1]
@@ -113,29 +114,23 @@ fn request_tracker(
     Ok(response)
 }
 
-fn start_connection(
-    initial_url: String,
-    port: String,
-) -> Result<TlsStream<TcpStream>, TrackerError> {
+/// Creates the TCP connection with the tracker.
+fn start_connection(initial_url: String, _port: String) -> Result<TcpStream, TrackerError> {
     if initial_url.is_empty() {
         return Err(TrackerError::new("URL not found".to_string()));
     }
-
-    let connector = TlsConnector::new()?;
     let url = initial_url.split("//").collect::<Vec<&str>>()[1]
         .split('/')
         .collect::<Vec<&str>>()[0];
-    let url_with_port = format!("{}:{}", url, port);
 
-    let stream = TcpStream::connect(url_with_port)?;
-    let stream = connector.connect(url, stream)?;
-
+    let stream = TcpStream::connect(url)?;
     Ok(stream)
 }
 
+/// Returns a String with the formatted tracker request given the info data.
 fn format_request(info: HashMap<String, String>, info_hash: &[u8], url: &str) -> String {
     let url_with_port = format!("{}:{}", url, info["port"]);
-    let request = format!("GET /announce?info_hash={}&peer_id={}&port={}&uploaded={}&downloaded={}&left={}&event={} HTTP/1.1\r\nHost: {}\r\n\r\n",
+    let request = format!("GET /announce?info_hash={}&peer_id={}&port={}&uploaded={}&downloaded={}&left={}&event={}&numwant={} HTTP/1.1\r\nHost: {}\r\n\r\n",
                               to_urlencoded(info_hash),
                               info["peer_id"],
                               info["port"],
@@ -143,14 +138,13 @@ fn format_request(info: HashMap<String, String>, info_hash: &[u8], url: &str) ->
                               info["downloaded"],
                               info["left"],
                               info["event"],
+                              NUMBER_OF_PEERS_TO_ORDER,
                               url_with_port);
     request
 }
 
-fn write_and_read_stream(
-    stream: &mut TlsStream<TcpStream>,
-    request: String,
-) -> Result<Vec<u8>, TrackerError> {
+/// Writes the request on the stream and then reads and return the response.
+fn write_and_read_stream(stream: &mut TcpStream, request: String) -> Result<Vec<u8>, TrackerError> {
     stream.write_all(request.as_bytes())?;
     let mut response = vec![];
 
@@ -158,8 +152,8 @@ fn write_and_read_stream(
     Ok(response)
 }
 
+/// Splits the response to avoid the html header.
 fn response_splitter(response: &[u8]) -> &[u8] {
-    // Return tracker response from the first \r\n\r\n
     let mut pos = 0;
     for i in 0..response.len() {
         if response[i] == b'\r'
@@ -186,7 +180,7 @@ mod tests {
         let mut info = HashMap::new();
         info.insert(
             String::from("URL"),
-            "https://torrent.ubuntu.com/announce".to_string(),
+            "http://bttracker.debian.org:6969/announce".to_string(),
         );
         info.insert(String::from("peer_id"), "12187165419728154321".to_string());
         info.insert(String::from("port"), format!("{}", 443));
@@ -196,12 +190,17 @@ mod tests {
         info.insert(String::from("event"), "started".to_string());
 
         let info_hash = [
-            44, 107, 104, 88, 214, 29, 169, 84, 61, 66, 49, 167, 29, 180, 177, 201, 38, 75, 6, 133,
+            177, 17, 129, 60, 230, 15, 66, 145, 151, 52, 130, 61, 245, 236, 32, 189, 30, 4, 231,
+            247,
         ]
         .to_vec();
 
         let (sender, receiver) = channel();
-        let mut logger = Logger::new("src/reports/logs.txt".to_string(), receiver).unwrap();
+        let mut logger = Logger::new(
+            "src/test_files/logger_test_files/logs_tracker1.txt".to_string(),
+            receiver,
+        )
+        .unwrap();
         spawn(move || logger.start());
         let tracker = Tracker::create(info, info_hash, sender).unwrap();
 
@@ -221,7 +220,8 @@ mod tests {
         info.insert(String::from("event"), "started".to_string());
 
         let info_hash = [
-            44, 107, 104, 88, 214, 29, 169, 84, 61, 66, 49, 167, 29, 180, 177, 201, 38, 75, 6, 133,
+            177, 17, 129, 60, 230, 15, 66, 145, 151, 52, 130, 61, 245, 236, 32, 189, 30, 4, 231,
+            247,
         ]
         .to_vec();
 
@@ -234,7 +234,7 @@ mod tests {
         let mut info = HashMap::new();
         info.insert(
             String::from("URL"),
-            "https://torrent.ubuntu.com/announce".to_string(),
+            "http://bttracker.debian.org:6969/announce".to_string(),
         );
         info.insert(String::from("peer_id"), "12187165419728154321".to_string());
         info.insert(String::from("port"), format!("{}", 443));
@@ -252,7 +252,7 @@ mod tests {
     #[test]
     fn start_connection_successful() {
         assert!(!start_connection(
-            "https://torrent.ubuntu.com/announce".to_string(),
+            "http://bttracker.debian.org:6969/announce".to_string(),
             "443".to_string(),
         )
         .is_err());
@@ -264,7 +264,7 @@ mod tests {
         //let mut stream22 = TlsStream::connect("https://torrent.ubuntu.com/announce").unwrap();
 
         let stream = start_connection(
-            "https://torrent.ubuntu.com/announce".to_string(),
+            "http://bttracker.debian.org:6969/announce".to_string(),
             "443".to_string(),
         );
 
@@ -277,7 +277,7 @@ mod tests {
         let mut info = HashMap::new();
         info.insert(
             String::from("URL"),
-            "https://torrent.ubuntu.com/announce".to_string(),
+            "http://bttracker.debian.org:6969/announce".to_string(),
         );
         info.insert(String::from("peer_id"), "12187165419728154321".to_string());
         info.insert(String::from("port"), format!("{}", 443));
@@ -287,23 +287,25 @@ mod tests {
         info.insert(String::from("event"), "started".to_string());
 
         let info_hash = [
-            44, 107, 104, 88, 214, 29, 169, 84, 61, 66, 49, 167, 29, 180, 177, 201, 38, 75, 6, 133,
+            177, 17, 129, 60, 230, 15, 66, 145, 151, 52, 130, 61, 245, 236, 32, 189, 30, 4, 231,
+            247,
         ]
         .to_vec();
 
-        assert_eq!(format_request(info, &info_hash,"torrent.ubuntu.com:433"), format!("GET /announce?info_hash=%2ckhX%d6%1d%a9T%3dB1%a7%1d%b4%b1%c9%26K%06%85&peer_id=12187165419728154321&port=443&uploaded=0&downloaded=0&left=0&event=started HTTP/1.1\r\nHost: torrent.ubuntu.com:433:443\r\n\r\n"));
+        assert_eq!(format_request(info, &info_hash,"torrent.ubuntu.com:433"), format!("GET /announce?info_hash=%b1%11%81%3c%e6%0fB%91%974%82%3d%f5%ec%20%bd%1e%04%e7%f7&peer_id=12187165419728154321&port=443&uploaded=0&downloaded=0&left=0&event=started&numwant=100 HTTP/1.1\r\nHost: torrent.ubuntu.com:433:443\r\n\r\n"));
     }
 
     #[test]
     fn correct_info_hash_urlencoded() {
         let info_hash = [
-            44, 107, 104, 88, 214, 29, 169, 84, 61, 66, 49, 167, 29, 180, 177, 201, 38, 75, 6, 133,
+            177, 17, 129, 60, 230, 15, 66, 145, 151, 52, 130, 61, 245, 236, 32, 189, 30, 4, 231,
+            247,
         ]
         .to_vec();
 
         assert_eq!(
             to_urlencoded(&info_hash),
-            "%2ckhX%d6%1d%a9T%3dB1%a7%1d%b4%b1%c9%26K%06%85"
+            "%b1%11%81%3c%e6%0fB%91%974%82%3d%f5%ec%20%bd%1e%04%e7%f7"
         );
     }
 }

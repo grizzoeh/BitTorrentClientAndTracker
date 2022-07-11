@@ -1,55 +1,72 @@
-use crate::communication_method::{CommunicationMethod, TCP};
-use crate::download_manager::PieceStatus;
-use crate::errors::listener_error::ListenerError;
-use crate::logger::LogMsg;
-use crate::peer::{add_piece_to_bitfield, IncomingPeer};
-use crate::peer_connection::PeerConnection;
-use crate::threadpool::ThreadPool;
-use crate::upload_manager::PieceRequest;
-use std::io::{self};
-use std::net::TcpListener;
-use std::sync::mpsc::{Receiver, Sender};
-use std::sync::{Arc, Mutex, RwLock};
-use std::thread;
-use std::time::Duration;
+use crate::{
+    download_manager::PieceStatus,
+    errors::listener_error::ListenerError,
+    logger::LogMsg,
+    peer_entities::communication_method::{CommunicationMethod, TCP},
+    peer_entities::peer::{add_piece_to_bitfield, IncomingPeer},
+    peer_entities::peer_connection::PeerConnection,
+    ui::ui_codes::*,
+    upload_manager::PieceRequest,
+    utilities::{constants::CHOKE_ID, utils::UiParams},
+};
+use glib::Sender as UISender;
+use std::{
+    io::{self},
+    net::TcpListener,
+    sync::mpsc::{Receiver, Sender},
+    sync::{Arc, Mutex},
+    thread::{self, spawn},
+    time::Duration,
+};
 
+/// This struct listens for incoming connections and creates a new thread for each one.
+#[allow(clippy::type_complexity)]
 pub struct Listener {
     listener: TcpListener,
-    _peers: Vec<PeerConnection<IncomingPeer>>,
-    bitfield: Arc<RwLock<Vec<PieceStatus>>>,
+    bitfield: Arc<Vec<Mutex<PieceStatus>>>,
     listener_control_receiver: Arc<Mutex<Receiver<String>>>,
     logger_sender: Arc<Mutex<Sender<LogMsg>>>,
     upload_sender: Arc<Mutex<Sender<Option<PieceRequest>>>>,
     client_id: String,
     info_hash: Vec<u8>,
+    sender_client: Arc<Mutex<UISender<Vec<(usize, UiParams, String)>>>>,
+    torrent_name: String,
+    threads_handles: Arc<Mutex<Vec<thread::JoinHandle<()>>>>,
 }
 
+#[allow(clippy::type_complexity)]
+#[allow(clippy::too_many_arguments)]
 impl Listener {
+    /// Creates a new listener instance.
     pub fn new(
         addr: &str,
-        bitfield: Arc<RwLock<Vec<PieceStatus>>>,
+        bitfield: Arc<Vec<Mutex<PieceStatus>>>,
         listener_control_receiver: Arc<Mutex<Receiver<String>>>,
         logger_sender: Arc<Mutex<Sender<LogMsg>>>,
         upload_sender: Arc<Mutex<Sender<Option<PieceRequest>>>>,
         client_id: String,
         info_hash: Vec<u8>,
+        sender_client: Arc<Mutex<UISender<Vec<(usize, UiParams, String)>>>>,
+        torrent_name: String,
     ) -> Result<Arc<Self>, ListenerError> {
         let listener = TcpListener::bind(addr)?;
         listener.set_nonblocking(true)?;
         Ok(Arc::new(Self {
             listener,
-            _peers: Vec::new(),
             bitfield,
             listener_control_receiver,
             logger_sender,
             upload_sender,
             client_id,
             info_hash,
+            sender_client,
+            torrent_name,
+            threads_handles: Arc::new(Mutex::new(Vec::new())),
         }))
     }
 
+    /// Starts to listen to incoming connections.
     pub fn listen(self: Arc<Self>) -> Result<(), ListenerError> {
-        let threadpool = ThreadPool::new(2);
         self.logger_sender.lock()?.send(LogMsg::Info(
             "Started Listening for connections...".to_string(),
         ))?;
@@ -61,14 +78,14 @@ impl Listener {
                     if let Ok(peer_connection) =
                         self.clone().init_incoming(Box::new(stream_connection))
                     {
-                        let copy = self.clone();
+                        let self_copy = self.clone();
                         self.logger_sender.lock()?.send(LogMsg::Info(format!(
                             "Incoming Peer Connection: {}",
                             peer_connection.peer.read()?.id
                         )))?;
-                        let _exe_ret = threadpool.execute(move || {
-                            let _r = copy.handle_connection(peer_connection);
-                        });
+                        self.threads_handles.lock().unwrap().push(spawn(move || {
+                            let _r = self_copy.handle_connection(peer_connection);
+                        }));
                     }
                 }
                 Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
@@ -76,20 +93,44 @@ impl Listener {
                         self.logger_sender.lock()?.send(LogMsg::Info(
                             "Listener received Stop message, terminating listener...".to_string(),
                         ))?;
-                        println!("Listener received Stop message, terminating listener...");
+                        self.join_finished_threads()?;
                         return Ok(());
                     } else {
                         thread::sleep(Duration::from_secs(5));
                         continue;
                     }
                 }
-                Err(e) => return Err(ListenerError::from(e)),
+
+                Err(e) => {
+                    self.join_finished_threads()?;
+                    return Err(ListenerError::from(e));
+                }
             }
         }
         Ok(())
     }
 
-    pub fn init_incoming(
+    /// Joins all threads when the listener is stopped.
+    fn join_finished_threads(self: Arc<Self>) -> Result<(), ListenerError> {
+        let mut handles = self.threads_handles.lock().unwrap();
+        while handles.len() > 0 {
+            match handles.pop() {
+                Some(handle) => {
+                    handle.join().unwrap();
+                    self.sender_client.lock()?.send(vec![(
+                        UPDATE_ACTIVE_CONNS,
+                        UiParams::Usize(1),
+                        self.torrent_name.clone(),
+                    )])?
+                }
+                None => break,
+            };
+        }
+        Ok(())
+    }
+
+    /// Returns an Incoming Peer connection given a CommunicationMethod.
+    fn init_incoming(
         self: Arc<Self>,
         s: Box<dyn CommunicationMethod + Send>,
     ) -> Result<Arc<PeerConnection<IncomingPeer>>, ListenerError> {
@@ -110,32 +151,94 @@ impl Listener {
         peer_connection
             .stream
             .lock()?
-            .set_read_timeout(Some(std::time::Duration::from_secs(120)))?;
+            .set_read_timeout(Some(std::time::Duration::from_secs(3)))?;
         Ok(Arc::new(peer_connection))
     }
 
-    pub fn handle_connection(
+    /// Starts the initial message exchanges with the connected peer.
+    fn handle_connection(
         self: Arc<Self>,
         peer_connection: Arc<PeerConnection<IncomingPeer>>,
     ) -> Result<(), ListenerError> {
+        peer_connection.clone().handshake(self.client_id.clone())?;
+        self.sender_client.lock()?.send(vec![(
+            UPDATE_PEER_ID_IP_PORT,
+            UiParams::Vector(vec![
+                peer_connection.peer.read()?.id.clone(),
+                peer_connection.peer.read()?.ip.clone(),
+                format!("{}", peer_connection.peer.read()?.port.clone()),
+            ]),
+            self.torrent_name.clone(),
+        )])?;
+        self.sender_client.lock()?.send(vec![(
+            UPDATE_ACTIVE_CONNS,
+            UiParams::Usize(1),
+            self.torrent_name.clone(),
+        )])?;
+
+        peer_connection.clone().unchoke()?;
+        self.sender_client.lock()?.send(vec![(
+            UPDATE_UNCHOKE,
+            UiParams::Vector(vec![
+                peer_connection.peer.read()?.id.clone(),
+                "Unchoked".to_string(),
+            ]),
+            self.torrent_name.clone(),
+        )])?;
+        self.sender_client.lock()?.send(vec![(
+            UPDATE_INTERESTED,
+            UiParams::Vector(vec![
+                peer_connection.peer.read()?.id.clone(),
+                "Interested".to_string(),
+            ]),
+            self.torrent_name.clone(),
+        )])?;
+
         peer_connection
             .clone()
-            .handshake(peer_connection.peer.read().unwrap().id.clone())?;
-        peer_connection.clone().unchoke()?;
-        peer_connection.clone().bitfield(self.build_bitfield()?)?;
+            .bitfield(self.clone().build_bitfield()?)?;
         loop {
-            peer_connection.clone().read_detect_message()?;
+            match peer_connection.clone().read_detect_message() {
+                Ok(msg) => {
+                    if msg == CHOKE_ID {
+                        self.sender_client.lock()?.send(vec![(
+                            DELETE_ONE_ACTIVE_CONNECTION,
+                            UiParams::Vector(vec![
+                                peer_connection.peer.read()?.id.clone(),
+                                "Disconnected".to_string(),
+                            ]),
+                            self.torrent_name.clone(),
+                        )])?;
+                        return Ok(());
+                    }
+                }
+                Err(e) => {
+                    self.sender_client.lock()?.send(vec![(
+                        DELETE_ONE_ACTIVE_CONNECTION,
+                        UiParams::Vector(vec![
+                            peer_connection.peer.read()?.id.clone(),
+                            "Disconnected".to_string(),
+                        ]),
+                        self.torrent_name.clone(),
+                    )])?;
+                    return Err(ListenerError::new(format!(
+                        "Error reading incoming peer message: {}",
+                        e
+                    )));
+                }
+            };
         }
     }
 
-    pub fn build_bitfield(self: Arc<Self>) -> Result<Vec<u8>, ListenerError> {
-        let mut bitfield_len = (self.bitfield.read()?.len() as usize) / 8;
+    /// Returns a Vec of bytes representing the common Bitfield.
+    fn build_bitfield(self: Arc<Self>) -> Result<Vec<u8>, ListenerError> {
+        let mut bitfield_len = (self.bitfield.len() as usize) / 8;
         if bitfield_len % 8 != 0 {
             bitfield_len += 1;
         }
         let mut bitfield = vec![0; bitfield_len as usize];
-        for (i, piece) in self.bitfield.read()?.iter().enumerate() {
-            if *piece == PieceStatus::Downloaded {
+        for (i, piece) in self.bitfield.iter().enumerate() {
+            if let PieceStatus::Downloaded = piece.lock().unwrap().to_owned() {
                 add_piece_to_bitfield(&mut bitfield, i as u32);
             }
         }

@@ -1,5 +1,4 @@
-use std::fmt::Display;
-use std::io::Error;
+use std::{fmt::Display, io::Error};
 
 #[derive(Debug)]
 pub struct BDecoderError {

@@ -1,17 +1,21 @@
-use std::fmt::Display;
-use std::io::Error;
-use std::net::TcpStream;
-use std::string::FromUtf8Error;
-use std::sync::mpsc::{Receiver, SendError, Sender};
-use std::sync::{MutexGuard, PoisonError, RwLockReadGuard};
-
-use crate::communication_method::CommunicationMethod;
-use crate::download_manager::PieceStatus;
-use crate::logger::LogMsg;
-use crate::peer::IncomingPeer;
-
-use super::communication_method_error::CommunicationMethodError;
-use super::peer_connection_error::PeerConnectionError;
+use super::{
+    communication_method_error::CommunicationMethodError,
+    peer_connection_error::PeerConnectionError,
+};
+use crate::{
+    download_manager::PieceStatus, logger::LogMsg,
+    peer_entities::communication_method::CommunicationMethod, peer_entities::peer::IncomingPeer,
+    utilities::utils::UiParams,
+};
+use glib::Sender as UISender;
+use std::{
+    fmt::Display,
+    io::Error,
+    net::TcpStream,
+    string::FromUtf8Error,
+    sync::mpsc::{Receiver, SendError, Sender},
+    sync::{MutexGuard, PoisonError, RwLockReadGuard},
+};
 
 #[derive(Debug)]
 pub struct ListenerError {
@@ -110,8 +114,27 @@ impl From<PoisonError<MutexGuard<'_, TcpStream>>> for ListenerError {
         }
     }
 }
+
 impl From<PoisonError<RwLockReadGuard<'_, Vec<PieceStatus>>>> for ListenerError {
     fn from(error: PoisonError<RwLockReadGuard<'_, Vec<PieceStatus>>>) -> ListenerError {
+        ListenerError {
+            msg: format!("ListenerError: ({})", error),
+        }
+    }
+}
+
+impl From<PoisonError<MutexGuard<'_, UISender<Vec<(usize, UiParams, String)>>>>> for ListenerError {
+    fn from(
+        error: PoisonError<MutexGuard<'_, UISender<Vec<(usize, UiParams, String)>>>>,
+    ) -> ListenerError {
+        ListenerError {
+            msg: format!("ListenerError: ({})", error),
+        }
+    }
+}
+
+impl From<SendError<Vec<(usize, UiParams, String)>>> for ListenerError {
+    fn from(error: SendError<Vec<(usize, UiParams, String)>>) -> ListenerError {
         ListenerError {
             msg: format!("ListenerError: ({})", error),
         }

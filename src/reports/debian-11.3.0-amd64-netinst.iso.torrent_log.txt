@@ -1,0 +1,346 @@
+CONNECTING WITH THE TRACKER
+RESPONSE OBTAINED SUCCESSFULLY
+Reading disk, please wait...
+Started Listening for connections...
+Uploader started waiting for requests...
+DOWNLOADING STARTED: 2022-07-11 17:38:32.828642501 UTC
+try peer connection is ok, peer:90.164.178.91
+try peer connection failed, peer:2a02:1205:5036:b380:fdb7:8ce7:58c8:b218
+ADDING THREAD, PEER:90.164.178.91
+PEER CONNECTION ESTABLISHED WITH PEER "90.164.178.91"
+try peer connection is ok, peer:84.163.103.10
+ADDING THREAD, PEER:84.163.103.10
+PEER CONNECTION ESTABLISHED WITH PEER "84.163.103.10"
+Error reading handshake from peer 51.159.70.176:51413, wrong pstrlen
+try peer connection failed, peer:51.159.70.176
+try peer connection failed, peer:185.204.1.221
+try peer connection failed, peer:185.144.83.13
+try peer connection failed, peer:207.180.237.120
+try peer connection failed, peer:2603:6010:283f:bd4a:0:7be7:9c43:5416
+PIECES TO DOWNLOAD: [35, 36, 37, 38, 39, 43, 44, 45, 46, 47]
+PIECES DOWNLOADING: 10
+THE NUMBER OF PIECES TO DOWNLOAD THIS ITERATION IS 10, PEER:84.163.103.10
+REQUESTING PIECE: 35 from:84.163.103.10
+Error reading handshake from peer 185.46.132.16:51413, wrong pstrlen
+try peer connection failed, peer:185.46.132.16
+PIECES TO DOWNLOAD: [48, 49, 54, 55, 56, 57, 58, 59, 62, 63]
+PIECES DOWNLOADING: 20
+THE NUMBER OF PIECES TO DOWNLOAD THIS ITERATION IS 10, PEER:90.164.178.91
+REQUESTING PIECE: 48 from:90.164.178.91
+try peer connection is ok, peer:82.39.212.49
+ADDING THREAD, PEER:82.39.212.49
+PEER CONNECTION ESTABLISHED WITH PEER "82.39.212.49"
+Incoming Peer Connection: default_id
+A peer requested piece index:0, offset:0, length:16384
+Sending piece: 0, offset:0, chunk len: 16384
+piece 48 downloaded from 90.164.178.91
+REQUESTING PIECE: 49 from:90.164.178.91
+piece 35 downloaded from 84.163.103.10
+REQUESTING PIECE: 36 from:84.163.103.10
+PIECES TO DOWNLOAD: [64, 65, 66, 67, 68, 69, 70, 71, 72, 73]
+PIECES DOWNLOADING: 28
+THE NUMBER OF PIECES TO DOWNLOAD THIS ITERATION IS 10, PEER:82.39.212.49
+REQUESTING PIECE: 64 from:82.39.212.49
+A peer requested piece index:0, offset:16384, length:16384
+Sending piece: 0, offset:16384, chunk len: 16384
+try peer connection failed, peer:204.168.225.241
+try peer connection failed, peer:2600:1700:3130:4270:86d3:f3d:3ae2:6ea1
+try peer connection is ok, peer:82.43.107.149
+ADDING THREAD, PEER:82.43.107.149
+PEER CONNECTION ESTABLISHED WITH PEER "82.43.107.149"
+PIECES TO DOWNLOAD: [74, 75, 76, 77, 78, 79, 80, 81, 82, 83]
+PIECES DOWNLOADING: 38
+THE NUMBER OF PIECES TO DOWNLOAD THIS ITERATION IS 10, PEER:82.43.107.149
+REQUESTING PIECE: 74 from:82.43.107.149
+piece 49 downloaded from 90.164.178.91
+REQUESTING PIECE: 54 from:90.164.178.91
+piece 74 downloaded from 82.43.107.149
+REQUESTING PIECE: 75 from:82.43.107.149
+A peer requested piece index:0, offset:32768, length:16384
+Sending piece: 0, offset:32768, chunk len: 16384
+piece 54 downloaded from 90.164.178.91
+REQUESTING PIECE: 55 from:90.164.178.91
+piece 36 downloaded from 84.163.103.10
+REQUESTING PIECE: 37 from:84.163.103.10
+try peer connection failed, peer:95.57.71.183
+try peer connection failed, peer:2a10:3781:874:0:673b:1362:48ca:8d3f
+try peer connection failed, peer:107.152.37.122
+A peer requested piece index:0, offset:49152, length:16384
+Sending piece: 0, offset:49152, chunk len: 16384
+try peer connection is ok, peer:212.17.102.77
+try peer connection failed, peer:2a05:87c6:a63:0:211:32ff:feca:aa38
+ADDING THREAD, PEER:212.17.102.77
+try peer connection failed, peer:2a0a:e340:1001:300::8:1
+PEER CONNECTION ESTABLISHED WITH PEER "212.17.102.77"
+try peer connection failed, peer:2400:d803:7907:eaee:5054:ff:fe83:5969
+try peer connection failed, peer:185.107.95.90
+try peer connection failed, peer:188.209.56.24
+try peer connection failed, peer:2001:41d0:203:b70e::5
+piece 75 downloaded from 82.43.107.149
+REQUESTING PIECE: 76 from:82.43.107.149
+PIECES TO DOWNLOAD: [84, 85, 86, 87, 88, 89, 90, 91, 92, 93]
+PIECES DOWNLOADING: 43
+THE NUMBER OF PIECES TO DOWNLOAD THIS ITERATION IS 10, PEER:212.17.102.77
+REQUESTING PIECE: 84 from:212.17.102.77
+A peer requested piece index:0, offset:65536, length:16384
+Sending piece: 0, offset:65536, chunk len: 16384
+piece 55 downloaded from 90.164.178.91
+REQUESTING PIECE: 56 from:90.164.178.91
+piece 37 downloaded from 84.163.103.10
+REQUESTING PIECE: 38 from:84.163.103.10
+A peer requested piece index:0, offset:81920, length:16384
+Sending piece: 0, offset:81920, chunk len: 16384
+piece 64 downloaded from 82.39.212.49
+REQUESTING PIECE: 65 from:82.39.212.49
+piece 76 downloaded from 82.43.107.149
+REQUESTING PIECE: 77 from:82.43.107.149
+A peer requested piece index:0, offset:98304, length:16384
+Sending piece: 0, offset:98304, chunk len: 16384
+try peer connection failed, peer:95.161.148.10
+try peer connection failed, peer:2001:1af8:4010:a085:1::beef
+try peer connection failed, peer:95.46.64.85
+try peer connection is ok, peer:86.106.143.216
+ADDING THREAD, PEER:86.106.143.216
+PEER CONNECTION ESTABLISHED WITH PEER "86.106.143.216"
+PIECES TO DOWNLOAD: [94, 95, 96, 97, 98, 99, 100, 101, 102, 103]
+PIECES DOWNLOADING: 49
+THE NUMBER OF PIECES TO DOWNLOAD THIS ITERATION IS 10, PEER:86.106.143.216
+REQUESTING PIECE: 94 from:86.106.143.216
+try peer connection failed, peer:176.23.144.49
+try peer connection failed, peer:185.194.143.201
+try peer connection failed, peer:2a03:4000:9:30::1
+piece 56 downloaded from 90.164.178.91
+REQUESTING PIECE: 57 from:90.164.178.91
+try peer connection failed, peer:45.152.210.61
+try peer connection failed, peer:2800:40:1b:d760:3415:f10c:a8fc:59bb
+try peer connection failed, peer:2001:470:5884:111::1
+piece 38 downloaded from 84.163.103.10
+REQUESTING PIECE: 39 from:84.163.103.10
+Error reading handshake from peer 217.120.53.206:51413, wrong pstrlen
+try peer connection failed, peer:217.120.53.206
+try peer connection failed, peer:2a00:1e:9440:1c01:12bf:48ff:fe8b:53ef
+piece 77 downloaded from 82.43.107.149
+REQUESTING PIECE: 78 from:82.43.107.149
+try peer connection is ok, peer:68.191.209.61
+ADDING THREAD, PEER:68.191.209.61
+PEER CONNECTION ESTABLISHED WITH PEER "68.191.209.61"
+PIECES TO DOWNLOAD: [104, 105, 106, 107, 108, 109, 110, 111, 112, 113]
+PIECES DOWNLOADING: 56
+THE NUMBER OF PIECES TO DOWNLOAD THIS ITERATION IS 10, PEER:68.191.209.61
+REQUESTING PIECE: 104 from:68.191.209.61
+piece 84 downloaded from 212.17.102.77
+REQUESTING PIECE: 85 from:212.17.102.77
+ PEER 68.191.209.61 CHOKED US, STOPPING DOWNLOAD OF THIS PIECE
+FAILED PIECE 104 request_piece(), peer 68.191.209.61, error: Peer choked us
+(peer request failed) CLEAN BITFIELD RETURNED=Ok(())
+SUBSTRACTING THREAD, PEER:68.191.209.61
+A peer requested piece index:0, offset:114688, length:16384
+Sending piece: 0, offset:114688, chunk len: 16384
+piece 94 downloaded from 86.106.143.216
+REQUESTING PIECE: 95 from:86.106.143.216
+piece 95 downloaded from 86.106.143.216
+REQUESTING PIECE: 96 from:86.106.143.216
+piece 78 downloaded from 82.43.107.149
+REQUESTING PIECE: 79 from:82.43.107.149
+piece 57 downloaded from 90.164.178.91
+REQUESTING PIECE: 58 from:90.164.178.91
+piece 39 downloaded from 84.163.103.10
+REQUESTING PIECE: 43 from:84.163.103.10
+A peer requested piece index:0, offset:131072, length:16384
+Sending piece: 0, offset:131072, chunk len: 16384
+piece 96 downloaded from 86.106.143.216
+REQUESTING PIECE: 97 from:86.106.143.216
+try peer connection failed, peer:49.191.8.212
+try peer connection is ok, peer:80.232.243.148
+ADDING THREAD, PEER:80.232.243.148
+PEER CONNECTION ESTABLISHED WITH PEER "80.232.243.148"
+piece 85 downloaded from 212.17.102.77
+REQUESTING PIECE: 86 from:212.17.102.77
+try peer connection failed, peer:173.82.143.36
+try peer connection failed, peer:2001:171b:2262:6ad0:1238:7d0b:d06c:e293
+A peer requested piece index:0, offset:147456, length:16384
+Sending piece: 0, offset:147456, chunk len: 16384
+piece 79 downloaded from 82.43.107.149
+REQUESTING PIECE: 80 from:82.43.107.149
+piece 58 downloaded from 90.164.178.91
+REQUESTING PIECE: 59 from:90.164.178.91
+piece 97 downloaded from 86.106.143.216
+REQUESTING PIECE: 98 from:86.106.143.216
+A peer requested piece index:0, offset:163840, length:16384
+Sending piece: 0, offset:163840, chunk len: 16384
+piece 65 downloaded from 82.39.212.49
+REQUESTING PIECE: 66 from:82.39.212.49
+piece 80 downloaded from 82.43.107.149
+REQUESTING PIECE: 81 from:82.43.107.149
+PIECES TO DOWNLOAD: [104, 105, 106, 107, 108, 109, 110, 111, 112, 113]
+PIECES DOWNLOADING: 43
+THE NUMBER OF PIECES TO DOWNLOAD THIS ITERATION IS 10, PEER:80.232.243.148
+REQUESTING PIECE: 104 from:80.232.243.148
+piece 98 downloaded from 86.106.143.216
+REQUESTING PIECE: 99 from:86.106.143.216
+try peer connection failed, peer:170.231.58.21
+piece 43 downloaded from 84.163.103.10
+REQUESTING PIECE: 44 from:84.163.103.10
+piece 59 downloaded from 90.164.178.91
+REQUESTING PIECE: 62 from:90.164.178.91
+piece 86 downloaded from 212.17.102.77
+REQUESTING PIECE: 87 from:212.17.102.77
+A peer requested piece index:0, offset:180224, length:16384
+Sending piece: 0, offset:180224, chunk len: 16384
+try peer connection is ok, peer:98.10.206.23
+ADDING THREAD, PEER:98.10.206.23
+PEER CONNECTION ESTABLISHED WITH PEER "98.10.206.23"
+PIECES TO DOWNLOAD: [114, 115, 116, 117, 118, 119, 120, 121, 122, 123]
+PIECES DOWNLOADING: 49
+THE NUMBER OF PIECES TO DOWNLOAD THIS ITERATION IS 10, PEER:98.10.206.23
+REQUESTING PIECE: 114 from:98.10.206.23
+ PEER 98.10.206.23 CHOKED US, STOPPING DOWNLOAD OF THIS PIECE
+FAILED PIECE 114 request_piece(), peer 98.10.206.23, error: Peer choked us
+(peer request failed) CLEAN BITFIELD RETURNED=Ok(())
+SUBSTRACTING THREAD, PEER:98.10.206.23
+try peer connection is ok, peer:37.187.78.133
+ADDING THREAD, PEER:37.187.78.133
+PEER CONNECTION ESTABLISHED WITH PEER "37.187.78.133"
+try peer connection is ok, peer:191.97.172.92
+ADDING THREAD, PEER:191.97.172.92
+PEER CONNECTION ESTABLISHED WITH PEER "191.97.172.92"
+piece 99 downloaded from 86.106.143.216
+REQUESTING PIECE: 100 from:86.106.143.216
+piece 81 downloaded from 82.43.107.149
+REQUESTING PIECE: 82 from:82.43.107.149
+Error reading handshake from peer 172.103.137.209:33969, wrong pstrlen
+try peer connection failed, peer:172.103.137.209
+PIECES TO DOWNLOAD: [114, 115, 116, 117, 118, 119, 120, 121, 122, 123]
+PIECES DOWNLOADING: 47
+THE NUMBER OF PIECES TO DOWNLOAD THIS ITERATION IS 10, PEER:191.97.172.92
+REQUESTING PIECE: 114 from:191.97.172.92
+A peer requested piece index:0, offset:196608, length:16384
+Sending piece: 0, offset:196608, chunk len: 16384
+PIECES TO DOWNLOAD: [124, 125, 126, 127, 128, 129, 130, 131, 132, 133]
+PIECES DOWNLOADING: 57
+THE NUMBER OF PIECES TO DOWNLOAD THIS ITERATION IS 10, PEER:37.187.78.133
+REQUESTING PIECE: 124 from:37.187.78.133
+piece 100 downloaded from 86.106.143.216
+REQUESTING PIECE: 101 from:86.106.143.216
+piece 104 downloaded from 80.232.243.148
+REQUESTING PIECE: 105 from:80.232.243.148
+piece 44 downloaded from 84.163.103.10
+REQUESTING PIECE: 45 from:84.163.103.10
+piece 82 downloaded from 82.43.107.149
+REQUESTING PIECE: 83 from:82.43.107.149
+A peer requested piece index:0, offset:212992, length:16384
+Sending piece: 0, offset:212992, chunk len: 16384
+piece 62 downloaded from 90.164.178.91
+REQUESTING PIECE: 63 from:90.164.178.91
+piece 101 downloaded from 86.106.143.216
+REQUESTING PIECE: 102 from:86.106.143.216
+piece 124 downloaded from 37.187.78.133
+REQUESTING PIECE: 125 from:37.187.78.133
+A peer requested piece index:0, offset:229376, length:16384
+Sending piece: 0, offset:229376, chunk len: 16384
+piece 87 downloaded from 212.17.102.77
+REQUESTING PIECE: 88 from:212.17.102.77
+try peer connection failed, peer:82.64.138.247
+try peer connection failed, peer:209.104.2.178
+piece 83 downloaded from 82.43.107.149
+PIECES TO DOWNLOAD: [134, 135, 136, 137, 138, 139, 140, 141, 142, 143]
+PIECES DOWNLOADING: 58
+THE NUMBER OF PIECES TO DOWNLOAD THIS ITERATION IS 10, PEER:82.43.107.149
+REQUESTING PIECE: 134 from:82.43.107.149
+piece 45 downloaded from 84.163.103.10
+REQUESTING PIECE: 46 from:84.163.103.10
+piece 114 downloaded from 191.97.172.92
+REQUESTING PIECE: 115 from:191.97.172.92
+piece 102 downloaded from 86.106.143.216
+REQUESTING PIECE: 103 from:86.106.143.216
+piece 63 downloaded from 90.164.178.91
+PIECES TO DOWNLOAD: [144, 145, 146, 147, 148, 149, 150, 151, 152, 153]
+PIECES DOWNLOADING: 64
+THE NUMBER OF PIECES TO DOWNLOAD THIS ITERATION IS 10, PEER:90.164.178.91
+REQUESTING PIECE: 144 from:90.164.178.91
+piece 66 downloaded from 82.39.212.49
+REQUESTING PIECE: 67 from:82.39.212.49
+piece 125 downloaded from 37.187.78.133
+REQUESTING PIECE: 126 from:37.187.78.133
+piece 105 downloaded from 80.232.243.148
+REQUESTING PIECE: 106 from:80.232.243.148
+piece 103 downloaded from 86.106.143.216
+PIECES TO DOWNLOAD: [154, 155, 156, 157, 158, 159, 160, 161, 162, 163]
+PIECES DOWNLOADING: 70
+THE NUMBER OF PIECES TO DOWNLOAD THIS ITERATION IS 10, PEER:86.106.143.216
+REQUESTING PIECE: 154 from:86.106.143.216
+piece 134 downloaded from 82.43.107.149
+REQUESTING PIECE: 135 from:82.43.107.149
+piece 46 downloaded from 84.163.103.10
+REQUESTING PIECE: 47 from:84.163.103.10
+piece 126 downloaded from 37.187.78.133
+REQUESTING PIECE: 127 from:37.187.78.133
+piece 144 downloaded from 90.164.178.91
+REQUESTING PIECE: 145 from:90.164.178.91
+try peer connection failed, peer:195.238.110.133
+try peer connection failed, peer:89.47.234.26
+try peer connection failed, peer:2600:3c03::f03c:92ff:fe8b:8aa2
+piece 88 downloaded from 212.17.102.77
+REQUESTING PIECE: 89 from:212.17.102.77
+try peer connection failed, peer:47.26.212.151
+try peer connection is ok, peer:212.51.143.176
+ADDING THREAD, PEER:212.51.143.176
+PEER CONNECTION ESTABLISHED WITH PEER "212.51.143.176"
+PIECES TO DOWNLOAD: [164, 165, 166, 167, 168, 169, 170, 171, 172, 173]
+PIECES DOWNLOADING: 75
+THE NUMBER OF PIECES TO DOWNLOAD THIS ITERATION IS 10, PEER:212.51.143.176
+REQUESTING PIECE: 164 from:212.51.143.176
+ PEER 212.51.143.176 CHOKED US, STOPPING DOWNLOAD OF THIS PIECE
+FAILED PIECE 164 request_piece(), peer 212.51.143.176, error: Peer choked us
+(peer request failed) CLEAN BITFIELD RETURNED=Ok(())
+SUBSTRACTING THREAD, PEER:212.51.143.176
+piece 154 downloaded from 86.106.143.216
+REQUESTING PIECE: 155 from:86.106.143.216
+piece 115 downloaded from 191.97.172.92
+REQUESTING PIECE: 116 from:191.97.172.92
+A peer requested piece index:0, offset:245760, length:16384
+Sending piece: 0, offset:245760, chunk len: 16384
+piece 135 downloaded from 82.43.107.149
+REQUESTING PIECE: 136 from:82.43.107.149
+piece 47 downloaded from 84.163.103.10
+PIECES TO DOWNLOAD: [164, 165, 166, 167, 168, 169, 170, 171, 172, 173]
+PIECES DOWNLOADING: 71
+THE NUMBER OF PIECES TO DOWNLOAD THIS ITERATION IS 10, PEER:84.163.103.10
+REQUESTING PIECE: 164 from:84.163.103.10
+piece 127 downloaded from 37.187.78.133
+REQUESTING PIECE: 128 from:37.187.78.133
+piece 106 downloaded from 80.232.243.148
+REQUESTING PIECE: 107 from:80.232.243.148
+piece 155 downloaded from 86.106.143.216
+REQUESTING PIECE: 156 from:86.106.143.216
+piece 145 downloaded from 90.164.178.91
+REQUESTING PIECE: 146 from:90.164.178.91
+piece 164 downloaded from 84.163.103.10
+REQUESTING PIECE: 165 from:84.163.103.10
+piece 136 downloaded from 82.43.107.149
+REQUESTING PIECE: 137 from:82.43.107.149
+piece 156 downloaded from 86.106.143.216
+REQUESTING PIECE: 157 from:86.106.143.216
+try peer connection failed, peer:45.134.213.215
+try peer connection failed, peer:2a02:168:5cd7:0:20d:b9ff:fe38:74b0
+try peer connection failed, peer:2001:bc8:32d7:1f7::1
+piece 128 downloaded from 37.187.78.133
+REQUESTING PIECE: 129 from:37.187.78.133
+piece 89 downloaded from 212.17.102.77
+REQUESTING PIECE: 90 from:212.17.102.77
+piece 116 downloaded from 191.97.172.92
+REQUESTING PIECE: 117 from:191.97.172.92
+piece 146 downloaded from 90.164.178.91
+REQUESTING PIECE: 147 from:90.164.178.91
+piece 157 downloaded from 86.106.143.216
+REQUESTING PIECE: 158 from:86.106.143.216
+piece 137 downloaded from 82.43.107.149
+REQUESTING PIECE: 138 from:82.43.107.149
+piece 67 downloaded from 82.39.212.49
+REQUESTING PIECE: 68 from:82.39.212.49
+piece 129 downloaded from 37.187.78.133
+REQUESTING PIECE: 130 from:37.187.78.133
+piece 107 downloaded from 80.232.243.148
+REQUESTING PIECE: 108 from:80.232.243.148
+piece 158 downloaded from 86.106.143.216
+REQUESTING PIECE: 159 from:86.106.143.216

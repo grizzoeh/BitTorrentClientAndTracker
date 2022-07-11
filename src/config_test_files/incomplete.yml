@@ -1,5 +1,0 @@
----
-log_path: "reports/logs"
-download_path: "reports/docs"
-port:
-log_level: "5"

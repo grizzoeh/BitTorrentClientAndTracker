@@ -1,12 +1,16 @@
-use crate::logger::LogMsg;
-use crate::upload_manager::PieceRequest;
-use std::fmt::Display;
-use std::io::Error;
-use std::string::FromUtf8Error;
-use std::sync::mpsc::SendError;
-use std::sync::{MutexGuard, PoisonError, RwLockWriteGuard};
-
 use super::communication_method_error::CommunicationMethodError;
+use crate::{
+    logger::LogMsg, peer_entities::communication_method::CommunicationMethod,
+    upload_manager::PieceRequest,
+};
+use std::{
+    fmt::Display,
+    io::Error,
+    string::FromUtf8Error,
+    sync::mpsc::SendError,
+    sync::TryLockError,
+    sync::{MutexGuard, PoisonError, RwLockWriteGuard},
+};
 
 #[derive(Debug)]
 pub struct PeerConnectionError {
@@ -35,6 +39,18 @@ impl From<Error> for PeerConnectionError {
 
 impl<T> From<PoisonError<MutexGuard<'_, T>>> for PeerConnectionError {
     fn from(error: PoisonError<MutexGuard<'_, T>>) -> PeerConnectionError {
+        PeerConnectionError {
+            msg: format!("PeerConnectionError: poisoned thread ({})", error),
+        }
+    }
+}
+
+impl From<TryLockError<MutexGuard<'_, Box<(dyn CommunicationMethod + Send + 'static)>>>>
+    for PeerConnectionError
+{
+    fn from(
+        error: TryLockError<MutexGuard<'_, Box<(dyn CommunicationMethod + Send + 'static)>>>,
+    ) -> PeerConnectionError {
         PeerConnectionError {
             msg: format!("PeerConnectionError: poisoned thread ({})", error),
         }

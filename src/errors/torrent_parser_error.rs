@@ -1,6 +1,5 @@
 use crate::errors::bdecoder_error::BDecoderError;
-use std::fmt::Display;
-use std::io::Error;
+use std::{fmt::Display, io::Error};
 
 #[derive(Debug)]
 pub struct TorrentParserError {

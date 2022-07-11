@@ -1,35 +1,18 @@
 Reading disk, please wait...
-DOWNLOADING STARTED: 2022-07-04 17:07:57.460303683 UTC
 Started Listening for connections...
 Uploader started waiting for requests...
-se conectó el stream
-se manda handshake
-se lee PSTR_LEN_LEN=[19]
-se lee pstr_len + RESERVED_SPACE_LEN=[66, 105, 116, 84, 111, 114, 114, 101, 110, 116, 32, 112, 114, 111, 116, 111, 99, 111, 108, 0, 0, 0, 0, 0, 0, 0, 0]
-se lee INFO_HASH_LEN=[5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5]
-leo PEER_ID_LEN=[100, 101, 102, 97, 117, 108, 116, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-escribo al final
-Connected to peer
-se conectó el stream
-se manda handshake
-se lee PSTR_LEN_LEN=[19]
-se lee pstr_len + RESERVED_SPACE_LEN=[66, 105, 116, 84, 111, 114, 114, 101, 110, 116, 32, 112, 114, 111, 116, 111, 99, 111, 108, 0, 0, 0, 0, 0, 0, 0, 0]
-se lee INFO_HASH_LEN=[5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5]
-leo PEER_ID_LEN=[100, 101, 102, 97, 117, 108, 116, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-escribo al final
-Connected to peer
-se conectó el stream
-se manda handshake
-se lee PSTR_LEN_LEN=[19]
-se lee pstr_len + RESERVED_SPACE_LEN=[66, 105, 116, 84, 111, 114, 114, 101, 110, 116, 32, 112, 114, 111, 116, 111, 99, 111, 108, 0, 0, 0, 0, 0, 0, 0, 0]
-se lee INFO_HASH_LEN=[5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5]
-leo PEER_ID_LEN=[100, 101, 102, 97, 117, 108, 116, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-escribo al final
-Connected to peer
-DOWNLOADING FINISHED: 2022-07-04 17:07:57.460726458 UTC
-PEER CONNECTION ESTABLISHED
-Bitfield received, LEN:1, peer_ip:localhost
-PEER CONNECTION ESTABLISHED
-Bitfield received, LEN:1, peer_ip:localhost
-PEER CONNECTION ESTABLISHED
-Bitfield received, LEN:1, peer_ip:localhost
+DOWNLOADING STARTED: 2022-07-11 18:35:04.577944868 UTC
+PEER CONNECTION ESTABLISHED WITH PEER "localhost1"
+PIECES TO DOWNLOAD: [0]
+PIECES DOWNLOADING: 1
+Piece 0 downloaded from localhost1
+Jobs spawned, waiting for downloads to end...
+PIECES LEFT: 0
+Finished waiting for downloads to end :)
+Uploader stopped, terminating listener...
+DOWNLOADING FINISHED: 2022-07-11 18:35:07.578344913 UTC
+Assembling file...
+File assembled successfully...
+Verifying file integrity...
+File verified successfully...
+Logger: End of transmission
