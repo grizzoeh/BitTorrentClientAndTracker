@@ -1,15 +1,3 @@
-# 22C1-Crab-Rave -> BitTorrent Client
+# 22C1-Crab-Rave -> BitTorrent Client and Tracker
 
-## Executing the Client
-
-    To execute the client `config.yml` must be configured.
-
-    Command: cargo run [insert torrents directory path]
-
-    The torrents directory path can contain 1 or more .torrent files. 
-
-## Executing AppServer (to test seeder mode)
-
-    Must be executed during the Client execution.
-    
-    Command: cargo run --bin app_server
+## This repository contains both BitTorrent Client and Tracker in each folder respectively

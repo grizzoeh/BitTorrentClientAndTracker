@@ -1,0 +1,41 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  padding: 10px 20px;
+}
+
+.title {
+  font-size: 3rem;
+  font-weight: bold;
+  text-align: center;
+}
+
+.row {
+  margin-top: 40px;
+}
+
+.chart-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chart-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 0.5em;
+}
+
+.chart {
+  width: 100%;
+  margin-top: 50px;
+}
+
+.form-select {
+  margin-top: 50px;
+}

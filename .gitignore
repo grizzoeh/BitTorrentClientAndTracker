@@ -13,6 +13,8 @@ Cargo.lock
 # Added by cargo
 
 /target
+Client/target
+Tracker/target
 desktop.ini
 
 
