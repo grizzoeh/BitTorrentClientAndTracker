@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Statistics</title>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+      integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="icon"
+      href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQPdVHWYpbqvDIukdgh0kIv7r9el2_iZM9tFA&usqp=CAU"
+    />
+  </head>
+  <body>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        padding: 10px 20px;
+      }
+
+      .title {
+        font-size: 3rem;
+        font-weight: bold;
+        text-align: center;
+      }
+
+      .row {
+        margin-top: 40px;
+      }
+
+      .chart-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        padding: 0 30px;
+      }
+
+      .chart-title {
+        font-size: 1.8rem;
+        font-weight: bold;
+        margin-bottom: 0.5em;
+      }
+
+      .chart {
+        width: 100%;
+        margin-top: 50px;
+      }
+
+      .label-text {
+        font-size: 22px;
+      }
+
+      .select-container {
+        display: flex;
+        width: 100%;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 100px;
+      }
+
+      .first-col-select-container {
+        margin-top: 25px;
+      }
+
+      .margin-bottom {
+        margin-top: 0;
+        margin-bottom: 40px;
+      }
+
+      #peers-full-download-chart {
+        margin-bottom: 135px;
+      }
+
+      @media screen and (max-width: 550px) {
+        .select-container {
+          flex-direction: column;
+          align-items: center;
+          padding: 0;
+        }
+
+        label {
+          align-self: flex-start;
+        }
+      }
+
+     
+    </style>
+    <div class="container-fluid">
+      <h1 class="col-xs-12 title">Tracker Statistics</h1>
+      <div class="row">
+        <div class="col-xl-4 chart-container">
+          <h2 class="chart-title">Peers Connected Over Time</h2>
+          <canvas id="peers-connected-chart" width="400" height="400"></canvas>
+          <div class="select-container first-col-select-container">
+            <label for="first-chart-select" class="label-text">Stats Of:</label>
+            <select class="custom-select w-75" id="peers-connected-time-chart">
+              <option value="last_hour">Last Hour</option>
+              <option value="last_five_hours">Last 5 Hour</option>
+              <option value="last_day">Last Day</option>
+              <option selected value="last_three_days">Last 3 Days</option>
+            </select>
+          </div>
+          <div class="select-container first-col-select-container">
+            <label class="label-text">Grouped By:</label>
+            <select
+              class="custom-select w-75"
+              id="peers-connected-groupedby-chart"
+            >
+              <option value="minutes">Minutes</option>
+              <option selected value="hours">Hours</option>
+            </select>
+          </div>
+          <div
+            class="select-container margin-bottom first-col-select-container"
+          >
+            <label class="label-text">Torrent:</label>
+            <select class="custom-select w-75" id="torrent-select">
+              <option selected disabled value="">
+                There are no Torrents with Data
+              </option>
+            </select>
+          </div>
+        </div>
+        <div class="col-xl-4 chart-container">
+          <h3 class="chart-title">Peers with Full Download</h3>
+          <canvas
+            id="peers-full-download-chart"
+            width="400"
+            height="400"
+          ></canvas>
+          <div class="select-container margin-bottom">
+            <label class="label-text">Stats Of:</label
+            ><select class="custom-select w-75" id="peers-completed-time-chart">
+              <option value="last_hour">Last Hour</option>
+              <option value="last_five_hours">Last 5 Hour</option>
+              <option value="last_day">Last Day</option>
+              <option selected value="last_three_days">Last 3 Days</option>
+            </select>
+          </div>
+        </div>
+        <div class="col-xl-4 chart-container">
+          <h4 class="chart-title">Total of Torrents</h4>
+          <canvas
+            id="total-of-torrents-chart"
+            width="400"
+            height="400"
+          ></canvas>
+          <div class="select-container">
+            <label for="first-chart-time-salect" class="label-text"
+              >Stats Of:</label
+            >
+            <select class="custom-select w-75" id="torrents-total-time-chart">
+              <option value="last_hour">Last Hour</option>
+              <option value="last_five_hours">Last 5 Hour</option>
+              <option value="last_day">Last Day</option>
+              <option selected value="last_three_days">Last 3 Days</option>
+            </select>
+          </div>
+          <div class="select-container margin-bottom">
+            <label class="label-text">Grouped By:</label>
+            <select
+              class="custom-select w-75"
+              id="torrents-total-groupedby-chart"
+            >
+              <option value="minutes">Minutes</option>
+              <option selected value="hours">Hours</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.8.2/dist/chart.min.js"></script>
+    <script src="stats.js"></script>
+  </body>
+</html>

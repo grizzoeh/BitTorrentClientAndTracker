@@ -143,6 +143,42 @@ fn format_request(info: HashMap<String, String>, info_hash: &[u8], url: &str) ->
     request
 }
 
+// VERSION PARA PROBAR TRACKER:
+// fn request_tracker(
+//     info: HashMap<String, String>,
+//     info_hash: &[u8],
+// ) -> Result<Decodification, TrackerError> {
+//     let mut stream = start_connection("http://localhost:8088/announce".to_string(), "8088".to_string())?;
+
+//     let url = "http://localhost:8088/announce".split("//").collect::<Vec<&str>>()[1]
+//         .split('/')
+//         .collect::<Vec<&str>>()[0];
+
+//     let request = format_request(info.clone(), info_hash, url);
+//     let response = write_and_read_stream(&mut stream, request)?;
+//     let d: &[u8] = response_splitter(response.as_ref());
+
+//     let response = bdecode(d)?;
+
+//     Ok(response)
+// }
+
+// // VERSION PARA PROBAR TRACKER:
+// fn format_request(info: HashMap<String, String>, info_hash: &[u8], url: &str) -> String {
+//     let url_with_port = format!("{}:{}", url, info["port"]);
+//     let request = format!("GET /announce?info_hash={}&peer_id={}&port={}&uploaded={}&downloaded={}&left={}&event={}&numwant={} HTTP/1.1\r\nHost: {}\r\n\r\n",
+//                               to_urlencoded(info_hash),
+//                               info["peer_id"],
+//                               8088,
+//                               info["uploaded"],
+//                               info["downloaded"],
+//                               info["left"],
+//                               info["event"],
+//                               NUMBER_OF_PEERS_TO_ORDER,
+//                               "localhost:8088");
+//     request
+// }
+
 /// Writes the request on the stream and then reads and return the response.
 fn write_and_read_stream(stream: &mut TcpStream, request: String) -> Result<Vec<u8>, TrackerError> {
     stream.write_all(request.as_bytes())?;

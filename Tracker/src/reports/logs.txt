@@ -1,0 +1,9 @@
+Initializing tracker with json file data
+DataManager listener starting...
+Listener started waiting for requests...
+Stats requested
+Response Status: HTTP/1.1 200 OK
+JS file requested
+Response Status: HTTP/1.1 200 OK
+Stats data requested
+Response Status: HTTP/1.1 200 OK

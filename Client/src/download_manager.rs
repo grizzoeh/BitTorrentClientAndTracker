@@ -583,10 +583,6 @@ impl DownloadManager {
                 pieces_indexes
             )))?;
 
-        let system_time = SystemTime::now();
-        let datetime: DateTime<Utc> = system_time.into();
-        let timestamp = datetime.timestamp();
-
         let pieces_downloading = self
             .bitfield
             .iter()
@@ -600,6 +596,9 @@ impl DownloadManager {
 
         for (iteration, piece) in pieces_to_download.iter_mut().enumerate() {
             let index = piece.piece_index;
+            let system_time = SystemTime::now();
+            let datetime: DateTime<Utc> = system_time.into();
+            let timestamp = datetime.timestamp();
             match self
                 .clone()
                 .request_piece(index as u32, peer_connection.clone())
@@ -610,7 +609,7 @@ impl DownloadManager {
                     let timestamp2 = datetime2.timestamp();
                     let mut time_difference = timestamp2 - timestamp;
                     if time_difference == 0 {
-                        time_difference = 1;
+                        time_difference = 8;
                     }
                     let download_speed = 16384 / time_difference;
                     self.sender_client.lock()?.send(vec![(
