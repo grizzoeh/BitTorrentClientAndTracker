@@ -27,8 +27,11 @@ pub fn parse_announce(announce_url: String) -> Result<HashMap<String, URLParams>
         let parameter_split = parameter.split('=').collect::<Vec<&str>>();
 
         let key = parameter_split[0];
-        let value = parameter_split[1];
-
+        let mut value = parameter_split[1];
+        //quick fix:
+        if value.contains("%20HTTP") {
+            value = value.split("%20HTTP").collect::<Vec<&str>>()[0];
+        }
         if key == "info_hash" {
             hashmap_valores_announce
                 .insert(key.to_string(), URLParams::Vector(decode(value.as_bytes())));
