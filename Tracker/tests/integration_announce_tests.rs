@@ -9,7 +9,6 @@ mod tests {
     use tracker::announce_utils::response_splitter;
     use tracker::app::initialize_app;
     use tracker::bdecoder::bdecode;
-    use tracker::constants::DATA_MANAGER_PATH;
     use tracker::tracker::Tracker;
     use tracker::{
         constants::{LISTENER_IP, LISTENER_PORT},
@@ -73,7 +72,7 @@ mod tests {
 
         // check if data saved in json file is correct
         thread::sleep(Duration::from_secs(5));
-        let mut data_manager = DataManager::new(DATA_MANAGER_PATH.to_string()).unwrap();
+        let mut data_manager = DataManager::new(PATH.to_string()).unwrap();
         let tracker = data_manager.init_tracker().unwrap();
         assert_eq!(
             tracker

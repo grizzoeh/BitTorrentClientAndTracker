@@ -118,10 +118,11 @@ const updateCompletedChart = (e) => {
 
   getStats()
     .then((data) => {
-      const labels = getAllInfoHashFilteredBy(data, toTimestamp(completedTime));
+      let labels = getAllInfoHashFilteredBy(data, toTimestamp(completedTime));
       let data_aux = [];
-      labels.map((torrent) => {
+      labels = labels.map((torrent) => {
         data_aux.push(getTotalCompletedPeersFromTorrent(data, torrent));
+        return [torrent[0], torrent[1], "...", torrent[labels.length - 1]];
       });
 
       const datasets = [
@@ -415,7 +416,7 @@ const formatHour = (day, hour, minute) => {
   if (day.length === 1) day = "0" + day;
   if (hour.length === 1) hour = "0" + hour;
   if (minute.length === 1) minute = "0" + minute;
-  return `${day} / ${hour}:${minute}`;
+  return `${day === "" ? day : day + " /"} ${hour}:${minute}`;
 };
 
 const getCorrectDay = (day) => {
@@ -423,35 +424,106 @@ const getCorrectDay = (day) => {
   if (day === -1) return 30;
   if (day === -2) return 29;
   return day;
-}
+};
+
+const formatHourTime = (time) => {
+  if (time === -5) return 19;
+  if (time === -4) return 20;
+  if (time === -3) return 21;
+  if (time === -2) return 22;
+  if (time === -1) return 23;
+  return time;
+};
 
 const groupedBy = (data, groupedBy, time) => {
   let data_copy = [...data];
   data_copy.sort();
   let result = [];
   let counter = 0;
+  let subFiveHours = time === "last_five_hours" ? 5 : 0;
   const currentDay = new Date().getDate();
   const currentHour = new Date().getHours();
   const currentMinute = new Date().getMinutes();
 
   if (groupedBy === "hours") {
-    for (let j = 2; j >= 0; j--) {
+    if (time === "last_three_days") {
+      for (let j = 2; j >= 0; j--) {
+        let daysCompleted = 0;
+        for (let i = currentHour; i < ONE_DAY_HOURS + currentHour + 1; i++) {
+          data_copy.map((value) => {
+            const valueDay = new Date(value * 1000).getDate();
+            const valueHour = new Date(value * 1000).getHours();
+            if (
+              getCorrectDay(currentDay - j) === valueDay &&
+              valueHour === i - 1
+            ) {
+              counter++;
+            }
+          });
+          if (i % 24 === 0) {
+            daysCompleted++;
+          }
+          result.push([
+            counter,
+            formatHour(
+              getCorrectDay(currentDay - j + daysCompleted),
+              `${formatHourTime(((i - 1) % 24) - subFiveHours)}`,
+              "00"
+            ),
+          ]);
+        }
+      }
+    } else {
       for (let i = currentHour; i < getHours(time) + currentHour + 1; i++) {
         data_copy.map((value) => {
           const valueDay = new Date(value * 1000).getDate();
           const valueHour = new Date(value * 1000).getHours();
-          if (getCorrectDay(currentDay - j) === valueDay && valueHour === i - 1) {
+          if (
+            (valueDay === currentDay || valueDay === currentDay - 1) &&
+            valueHour === i - 1
+          ) {
             counter++;
           }
         });
         result.push([
           counter,
-          formatHour(getCorrectDay(currentDay - j), `${(i - 1) % 24}`, "00"),
+          formatHour("", `${formatHourTime((i % 24) - subFiveHours)}`, "00"),
         ]);
       }
     }
   } else {
-    for (let k = 2; k >= 0; k--) {
+    if (time === "last_three_days") {
+      for (let k = 2; k >= 0; k--) {
+        for (let j = currentHour; j < ONE_DAY_HOURS + currentHour + 1; j++) {
+          let daysCompleted = 0;
+          for (let i = currentMinute; i < 60 + currentMinute; i++) {
+            data_copy.map((value) => {
+              const valueDay = new Date(value * 1000).getDate();
+              const valueHour = new Date(value * 1000).getHours();
+              const valueMinute = new Date(value * 1000).getMinutes();
+              if (
+                getCorrectDay(currentDay - k) === valueDay &&
+                valueHour === j % 24 &&
+                valueMinute === i % 60
+              ) {
+                counter++;
+              }
+            });
+            if (j % 24 === 0) {
+              daysCompleted++;
+            }
+            result.push([
+              counter,
+              formatHour(
+                getCorrectDay(currentDay - k + daysCompleted),
+                `${formatHourTime((j % 24) - subFiveHours)}`,
+                `${i % 60}`
+              ),
+            ]);
+          }
+        }
+      }
+    } else if (time === "last_day") {
       for (let j = currentHour; j < 24 + currentHour + 1; j++) {
         for (let i = currentMinute; i < 60 + currentMinute; i++) {
           data_copy.map((value) => {
@@ -459,7 +531,7 @@ const groupedBy = (data, groupedBy, time) => {
             const valueHour = new Date(value * 1000).getHours();
             const valueMinute = new Date(value * 1000).getMinutes();
             if (
-              getCorrectDay(currentDay - k) === valueDay &&
+              (valueDay === currentDay || valueDay === currentDay - 1) &&
               valueHour === j % 24 &&
               valueMinute === i % 60
             ) {
@@ -468,7 +540,61 @@ const groupedBy = (data, groupedBy, time) => {
           });
           result.push([
             counter,
-            formatHour(getCorrectDay(currentDay - k), `${j % 24}`, `${i % 60}`),
+            formatHour(
+              "",
+              `${formatHourTime((j % 24) - subFiveHours)}`,
+              `${i % 60}`
+            ),
+          ]);
+        }
+      }
+    } else if (time === "last_five_hours") {
+      for (let j = currentHour; j < 6 + currentHour; j++) {
+        for (let i = currentMinute; i < 60 + currentMinute; i++) {
+          data_copy.map((value) => {
+            const valueDay = new Date(value * 1000).getDate();
+            const valueHour = new Date(value * 1000).getHours();
+            const valueMinute = new Date(value * 1000).getMinutes();
+            if (
+              (valueDay === currentDay || valueDay === currentDay - 1) &&
+              valueHour === j % 24 &&
+              valueMinute === i % 60
+            ) {
+              counter++;
+            }
+          });
+          result.push([
+            counter,
+            formatHour(
+              "",
+              `${formatHourTime((j % 24) - subFiveHours)}`,
+              `${i % 60}`
+            ),
+          ]);
+        }
+      }
+    } else {
+      for (let j = currentHour; j < 2 + currentHour; j++) {
+        for (let i = currentMinute; i < 60 + currentMinute; i++) {
+          data_copy.map((value) => {
+            const valueDay = new Date(value * 1000).getDate();
+            const valueHour = new Date(value * 1000).getHours();
+            const valueMinute = new Date(value * 1000).getMinutes();
+            if (
+              (valueDay === currentDay || valueDay === currentDay - 1) &&
+              valueHour === j % 24 &&
+              valueMinute === i % 60
+            ) {
+              counter++;
+            }
+          });
+          result.push([
+            counter,
+            formatHour(
+              "",
+              `${formatHourTime((j % 24) - subFiveHours - 1)}`,
+              `${i % 60}`
+            ),
           ]);
         }
       }
@@ -478,10 +604,11 @@ const groupedBy = (data, groupedBy, time) => {
 };
 
 const prepareDataForFullDownloadBarChar = (data) => {
-  const labels = getAllInfoHashFilteredBy(data, toTimestamp(completedTime));
+  let labels = getAllInfoHashFilteredBy(data, toTimestamp(completedTime));
   let data_aux = [];
-  labels.map((torrent) => {
+  labels = labels.map((torrent) => {
     data_aux.push(getTotalCompletedPeersFromTorrent(data, torrent));
+    return [torrent[0], torrent[1], "...", torrent[labels.length - 1]];
   });
 
   const result = {

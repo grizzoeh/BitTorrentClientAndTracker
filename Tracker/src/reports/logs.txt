@@ -1,9 +1,10 @@
 Initializing tracker with json file data
 DataManager listener starting...
 Listener started waiting for requests...
-Stats requested
+Peer 127.0.0.1 download completed
+Announce requested
 Response Status: HTTP/1.1 200 OK
-JS file requested
+Peer 127.0.0.1 download completed
+Announce requested
 Response Status: HTTP/1.1 200 OK
-Stats data requested
-Response Status: HTTP/1.1 200 OK
+Saving data into the json file
