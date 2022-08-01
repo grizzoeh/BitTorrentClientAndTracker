@@ -1,7 +1,7 @@
 Listener started waiting for requests...
 Announce requested
-Response Status: HTTP/1.1 200 OK
-Logger: End of transmission
+Response StatAnnounce requested
+RLogger: End of transmission
  OK
 Logger: End of transmission
 n

@@ -1,2 +1,1 @@
-{"torrents":[[[1,2,3],{"info_hash":[1,2,3],"peers":{"pepe10":{"port":"443","id":"pepe10","ip":"127.0.0.1","info_hash":[1,2,3],"uploaded":"0","downloaded":"0","left":"0","connected":true,"completed":false,"numwant":50,"compact":0,"no_peer_id":0,"key":"","trackerid":""}}}]],"historical_torrents":[1010101010],"historical_peers":[[[1,2,3],[["connected",[1010101010]]]]],"new_changes":true}
-
+{"torrents":[[[1,2,3],{"info_hash":[1,2,3],"peers":{"pepe10":{"port":"443","id":"pepe10","ip":"127.0.0.1","info_hash":[1,2,3],"uploaded":"0","downloaded":"0","left":"0","connected":true,"completed":false,"numwant":50,"compact":0,"no_peer_id":0,"key":"","trackerid":""}}}]],"historical_torrents":[1010101010],"historical_peers":[[[1,2,3],[["connected",[1010101010]]]]],"new_changes":false}

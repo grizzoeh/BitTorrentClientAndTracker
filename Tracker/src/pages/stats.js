@@ -121,7 +121,13 @@ const updateCompletedChart = (e) => {
       let labels = getAllInfoHashFilteredBy(data, toTimestamp(completedTime));
       let data_aux = [];
       labels = labels.map((torrent) => {
-        data_aux.push(getTotalCompletedPeersFromTorrent(data, torrent));
+        data_aux.push(
+          getTotalCompletedPeersFromTorrent(
+            data,
+            torrent,
+            toTimestamp(completedTime)
+          )
+        );
         return [torrent[0], torrent[1], "...", torrent[labels.length - 1]];
       });
 
@@ -273,12 +279,17 @@ const getConnectedPeersFromTorrent = (data, torrent) => {
   return result;
 };
 
-const getTotalCompletedPeersFromTorrent = (data, torrent) => {
+const getTotalCompletedPeersFromTorrent = (data, torrent, filterBy) => {
   let counter = 0;
+  const now = Date.now();
   data["historical_peers"].map((peer) => {
     if (peer[0] === torrent) {
       peer[1].map((peer2) => {
-        if (peer2[0] === "completed") counter += peer2[1].length;
+        if (peer2[0] === "completed") {
+          peer2[1].map((p) => {
+            if (now - p * 1000 <= filterBy) counter++;
+          });
+        }
       });
       return counter;
     }
@@ -413,9 +424,10 @@ const getMinutes = (time) => {
 };
 
 const formatHour = (day, hour, minute) => {
-  if (day.length === 1) day = "0" + day;
-  if (hour.length === 1) hour = "0" + hour;
-  if (minute.length === 1) minute = "0" + minute;
+  if (day !== "" && day < 10) day = "0" + day;
+  if (hour < 10) hour = "0" + hour;
+  if (minute < 10) minute = "0" + minute;
+  if (minute === "000") minute = "00";
   return `${day === "" ? day : day + " /"} ${hour}:${minute}`;
 };
 
@@ -455,7 +467,7 @@ const groupedBy = (data, groupedBy, time) => {
             const valueHour = new Date(value * 1000).getHours();
             if (
               getCorrectDay(currentDay - j) === valueDay &&
-              valueHour === i - 1
+              valueHour === i % 24
             ) {
               counter++;
             }
@@ -467,7 +479,7 @@ const groupedBy = (data, groupedBy, time) => {
             counter,
             formatHour(
               getCorrectDay(currentDay - j + daysCompleted),
-              `${formatHourTime(((i - 1) % 24) - subFiveHours)}`,
+              `${formatHourTime((i % 24) - subFiveHours)}`,
               "00"
             ),
           ]);
@@ -479,8 +491,9 @@ const groupedBy = (data, groupedBy, time) => {
           const valueDay = new Date(value * 1000).getDate();
           const valueHour = new Date(value * 1000).getHours();
           if (
-            (valueDay === currentDay || valueDay === currentDay - 1) &&
-            valueHour === i - 1
+            (valueDay === currentDay ||
+              valueDay === getCorrectDay(currentDay - 1)) &&
+            valueHour === i % 24
           ) {
             counter++;
           }
@@ -531,7 +544,8 @@ const groupedBy = (data, groupedBy, time) => {
             const valueHour = new Date(value * 1000).getHours();
             const valueMinute = new Date(value * 1000).getMinutes();
             if (
-              (valueDay === currentDay || valueDay === currentDay - 1) &&
+              (valueDay === currentDay ||
+                valueDay === getCorrectDay(currentDay - 1)) &&
               valueHour === j % 24 &&
               valueMinute === i % 60
             ) {
@@ -549,7 +563,7 @@ const groupedBy = (data, groupedBy, time) => {
         }
       }
     } else if (time === "last_five_hours") {
-      for (let j = currentHour; j < 6 + currentHour; j++) {
+      for (let j = currentHour; j < 5 + currentHour; j++) {
         for (let i = currentMinute; i < 60 + currentMinute; i++) {
           data_copy.map((value) => {
             const valueDay = new Date(value * 1000).getDate();
@@ -607,7 +621,13 @@ const prepareDataForFullDownloadBarChar = (data) => {
   let labels = getAllInfoHashFilteredBy(data, toTimestamp(completedTime));
   let data_aux = [];
   labels = labels.map((torrent) => {
-    data_aux.push(getTotalCompletedPeersFromTorrent(data, torrent));
+    data_aux.push(
+      getTotalCompletedPeersFromTorrent(
+        data,
+        torrent,
+        toTimestamp(completedTime)
+      )
+    );
     return [torrent[0], torrent[1], "...", torrent[labels.length - 1]];
   });
 
